@@ -20,19 +20,343 @@ fi
 # shellcheck disable=SC1090
 source "${BRO_COMMON}"
 
-MODE="ansible"
+# bro-user - Create/remove users configured for rootless Podman
+#
+# Creates/updates OR removes a user configured for rootless Podman with home under:
+#   /var/lib/containers/unprivileged/<username>
+#
+# Create/Update features:
+#   - ZFS dataset for the home (auto-mounted) with optimized settings
+#   - Ensures skeleton files from /etc/skel are present
+#   - --system-user: create as system user (no login shell: /usr/sbin/nologin)
+#   - subuid/subgid ranges (65536)
+#   - per-user storage.conf: overlay + fuse-overlayfs + mountopt="nodev"
+#   - per-user containers.conf with pasta networking
+#   - graphroot: $HOME/.local/share/containers/storage
+#   - loginctl enable-linger <user> for systemd user services
+#
+# Remove:
+#   - --remove: stop user podman resources, disable lingering,
+#               unmount+destroy ZFS, remove subuid/subgid, delete user
+#
+# Usage:
+#   sudo bro-user [--dry-run] [--system-user] [--zfs-parent DATASET] <username>
+#   sudo bro-user --remove [--dry-run] [--zfs-parent DATASET] <username>
+
+DRYRUN=0
+SYSTEM_USER=0
+DO_REMOVE=0
+ZFS_PARENT_DATASET=""
+
+run() { 
+  if (( DRYRUN )); then 
+    bro_info "DRY-RUN: $*"
+  else 
+    "$@"
+  fi
+}
+
+usage() {
+  cat <<EOF
+Usage:
+  Create/Update:
+    $0 [--dry-run] [--system-user] [--zfs-parent DATASET] <username>
+  Remove:
+    $0 --remove [--dry-run] [--zfs-parent DATASET] <username>
+
+Options:
+  --dry-run         Show what would be done without executing
+  --system-user     Create as system user (nologin shell)
+  --zfs-parent DATASET  Parent ZFS dataset for user home
+  --remove          Remove user and all associated resources
+  --help            Show this help message
+
+Examples:
+  sudo bro-user myuser
+  sudo bro-user --system-user --zfs-parent tank/users serviceuser
+  sudo bro-user --remove myuser
+EOF
+}
+
+# Parse arguments
+bro_require_root
 ARGS=()
-for a in "$@"; do
-  case "$a" in
-    --script) MODE="script" ;;
-    *) ARGS+=("$a") ;;
+while (( $# )); do
+  case "$1" in
+    --dry-run) DRYRUN=1 ;;
+    --system-user) SYSTEM_USER=1 ;;
+    --zfs-parent) shift; [[ $# -gt 0 && -n "${1:-}" ]] || { bro_error "--zfs-parent requires a value"; exit 2; }; ZFS_PARENT_DATASET="$1" ;;
+    --remove) DO_REMOVE=1 ;;
+    -h|--help) usage; exit 0 ;;
+    --) shift; while (( $# )); do ARGS+=("$1"); shift; done; break ;;
+    -* ) bro_error "Unknown option: $1"; exit 2 ;;
+    *  ) ARGS+=("$1") ;;
   esac
+  shift
 done
 
-if [[ "$MODE" == ansible ]]; then
-  bro_run_ansible "$(basename "$0")" "${ARGS[@]:-}"
-  exit 0
-fi
+(( ${#ARGS[@]} == 1 )) || { bro_error "Exactly one <username> required."; usage; exit 2; }
+USERNAME="${ARGS[0]}"
 
-# --- shell mode ---
-bro_log "(shell mode) bro-user would create/remove rootless users here."
+[[ "$USERNAME" != -* ]] || { bro_error "Username looks like a flag."; exit 2; }
+[[ "$USERNAME" =~ ^[a-z_][a-z0-9_-]*[$]?$ ]] || { bro_error "Invalid username '$USERNAME'."; exit 2; }
+
+# Constants
+USER_HOME_BASE="/var/lib/containers/unprivileged"
+USERNAME_HOME="${USER_HOME_BASE}/${USERNAME}"
+
+SUBUID_FILE="/etc/subuid"
+SUBGID_FILE="/etc/subgid"
+RANGE_SIZE=65536
+
+XDG_CONFIG_HOME="${USERNAME_HOME}/.config"
+XDG_DATA_HOME="${USERNAME_HOME}/.local/share"
+CONTAINERS_CFG_DIR="${XDG_CONFIG_HOME}/containers"
+CONTAINERS_DATA_DIR="${XDG_DATA_HOME}/containers"
+GRAPHROOT="${CONTAINERS_DATA_DIR}/storage"
+STORAGE_CONF="${CONTAINERS_CFG_DIR}/storage.conf"
+CONTAINERS_CONF="${CONTAINERS_CFG_DIR}/containers.conf"
+
+# Check if ZFS is available
+has_zfs() { command -v zfs >/dev/null 2>&1; }
+
+# Check if dataset exists
+zfs_dataset_exists() { [[ -n "$1" ]] && zfs list -H -o name "$1" >/dev/null 2>&1; }
+
+# Get next available subuid/subgid range
+next_subid_range() {
+  local file="$1"
+  local max_start=0
+  while IFS=: read -r user start size || [[ -n "$user" ]]; do
+    [[ -n "$user" && "$user" != "#"* ]] || continue
+    local end=$((start + size))
+    (( end > max_start )) && max_start=$end
+  done < "$file"
+  # Align to 65536 boundary
+  echo $(( (max_start + RANGE_SIZE - 1) / RANGE_SIZE * RANGE_SIZE ))
+}
+
+# Create ZFS dataset for user home
+create_zfs_dataset() {
+  local dataset="$1"
+  bro_info "Creating ZFS dataset: $dataset"
+  run "zfs create -o mountpoint='$USERNAME_HOME' \
+         -o xattr=sa -o acltype=posixacl -o aclinherit=passthrough -o aclmode=passthrough \
+         -o compression=zstd -o atime=off -o recordsize=128K '$dataset'"
+}
+
+# Setup subuid/subgid ranges
+setup_subid_ranges() {
+  local uid gid
+  uid=$(id -u "$USERNAME")
+  gid=$(id -g "$USERNAME")
+  
+  # Check if entries already exist
+  if ! grep -q "^$USERNAME:" "$SUBUID_FILE"; then
+    local subuid_start
+    subuid_start=$(next_subid_range "$SUBUID_FILE")
+    bro_info "Adding subuid range: $USERNAME:$subuid_start:$RANGE_SIZE"
+    run "echo '$USERNAME:$subuid_start:$RANGE_SIZE' >> '$SUBUID_FILE'"
+  fi
+  
+  if ! grep -q "^$USERNAME:" "$SUBGID_FILE"; then
+    local subgid_start
+    subgid_start=$(next_subid_range "$SUBGID_FILE")
+    bro_info "Adding subgid range: $USERNAME:$subgid_start:$RANGE_SIZE"
+    run "echo '$USERNAME:$subgid_start:$RANGE_SIZE' >> '$SUBGID_FILE'"
+  fi
+}
+
+# Setup container configuration files
+setup_container_configs() {
+  local uid gid
+  uid=$(id -u "$USERNAME")
+  gid=$(id -g "$USERNAME")
+  
+  bro_info "Creating container configuration directories"
+  run "mkdir -p '$CONTAINERS_CFG_DIR' '$CONTAINERS_DATA_DIR'"
+  run "chown '$uid:$gid' '$CONTAINERS_CFG_DIR' '$CONTAINERS_DATA_DIR'"
+  
+  # Create storage.conf
+  bro_info "Creating storage.conf with overlay + fuse-overlayfs"
+  run "cat > '$STORAGE_CONF' << 'EOF'
+[storage]
+driver = \"overlay\"
+graphroot = \"$GRAPHROOT\"
+runroot = \"/run/user/$uid/containers\"
+
+[storage.options]
+additionalimagestores = []
+pull_options = {enable_partial_images = \"false\", use_hard_links = \"false\", ostree_repos=\"\"}
+
+[storage.options.overlay]
+mountopt = \"nodev\"
+mount_program = \"/usr/bin/fuse-overlayfs\"
+EOF"
+  
+  # Create containers.conf
+  bro_info "Creating containers.conf with pasta networking"
+  run "cat > '$CONTAINERS_CONF' << 'EOF'
+[engine]
+cgroup_manager = \"cgroupfs\"
+events_logger = \"file\"
+log_level = \"error\"
+
+[network]
+default_rootless_network_cmd = \"pasta\"
+pasta_options = [\"-m\", \"1500\"]
+EOF"
+  
+  run "chown '$uid:$gid' '$STORAGE_CONF' '$CONTAINERS_CONF'"
+}
+
+# Copy skeleton files
+copy_skeleton() {
+  local uid gid
+  uid=$(id -u "$USERNAME")
+  gid=$(id -g "$USERNAME")
+  
+  if [[ -d /etc/skel ]]; then
+    bro_info "Copying skeleton files from /etc/skel"
+    run "cp -r /etc/skel/. '$USERNAME_HOME/'"
+    run "chown -R '$uid:$gid' '$USERNAME_HOME'"
+  fi
+}
+
+# Enable systemd lingering
+enable_lingering() {
+  bro_info "Enabling systemd lingering for $USERNAME"
+  run "loginctl enable-linger '$USERNAME'"
+}
+
+# Create user
+create_user() {
+  if id "$USERNAME" &>/dev/null; then
+    bro_warn "User $USERNAME already exists"
+    return 0
+  fi
+  
+  local shell_bin="/bin/bash"
+  if (( SYSTEM_USER )); then
+    shell_bin="/usr/sbin/nologin"
+    bro_info "Creating system user $USERNAME with nologin shell"
+    run "useradd --system --home-dir '$USERNAME_HOME' --create-home --shell '$shell_bin' '$USERNAME'"
+  else
+    bro_info "Creating regular user $USERNAME"
+    run "useradd --home-dir '$USERNAME_HOME' --create-home --shell '$shell_bin' '$USERNAME'"
+  fi
+}
+
+# Remove user and all resources
+remove_user() {
+  bro_info "Removing user $USERNAME and all associated resources"
+  
+  # Stop user processes
+  if id "$USERNAME" &>/dev/null; then
+    bro_info "Stopping all processes for user $USERNAME"
+    run "pkill -u '$USERNAME' || true"
+    run "sleep 2"
+    run "pkill -9 -u '$USERNAME' || true"
+  fi
+  
+  # Disable lingering
+  bro_info "Disabling systemd lingering"
+  run "loginctl disable-linger '$USERNAME' || true"
+  
+  # Remove from subuid/subgid
+  if [[ -f "$SUBUID_FILE" ]]; then
+    bro_info "Removing subuid entries"
+    run "sed -i '/^$USERNAME:/d' '$SUBUID_FILE'"
+  fi
+  
+  if [[ -f "$SUBGID_FILE" ]]; then
+    bro_info "Removing subgid entries"
+    run "sed -i '/^$USERNAME:/d' '$SUBGID_FILE'"
+  fi
+  
+  # Handle ZFS dataset
+  if has_zfs; then
+    local dataset
+    if [[ -n "$ZFS_PARENT_DATASET" ]]; then
+      dataset="$ZFS_PARENT_DATASET/$USERNAME"
+    else
+      # Try to detect dataset from mountpoint
+      dataset=$(zfs list -H -o name,mountpoint | awk -v mp="$USERNAME_HOME" '$2 == mp {print $1}')
+    fi
+    
+    if [[ -n "$dataset" ]] && zfs_dataset_exists "$dataset"; then
+      bro_info "Destroying ZFS dataset: $dataset"
+      run "zfs destroy '$dataset'"
+    fi
+  fi
+  
+  # Remove user account
+  if id "$USERNAME" &>/dev/null; then
+    bro_info "Deleting user account"
+    run "userdel '$USERNAME'"
+  fi
+  
+  # Clean up home directory if it still exists
+  if [[ -d "$USERNAME_HOME" ]]; then
+    bro_info "Removing home directory: $USERNAME_HOME"
+    run "rm -rf '$USERNAME_HOME'"
+  fi
+}
+
+# Main execution
+main() {
+  bro_info "bro-user: $(if (( DO_REMOVE )); then echo "Removing"; else echo "Creating/updating"; fi) user $USERNAME"
+  
+  if (( DO_REMOVE )); then
+    remove_user
+    bro_info "User $USERNAME removed successfully"
+    return 0
+  fi
+  
+  # Create user
+  create_user
+  
+  # Create ZFS dataset if requested and possible
+  if has_zfs && [[ -n "$ZFS_PARENT_DATASET" ]]; then
+    if zfs_dataset_exists "$ZFS_PARENT_DATASET"; then
+      local user_dataset="$ZFS_PARENT_DATASET/$USERNAME"
+      if ! zfs_dataset_exists "$user_dataset"; then
+        create_zfs_dataset "$user_dataset"
+      else
+        bro_info "ZFS dataset already exists: $user_dataset"
+      fi
+    else
+      bro_warn "Parent ZFS dataset does not exist: $ZFS_PARENT_DATASET"
+    fi
+  elif has_zfs && [[ -d "/var/lib/containers/unprivileged" ]]; then
+    # Auto-detect parent dataset
+    local parent_dataset
+    parent_dataset=$(zfs list -H -o name,mountpoint | awk '$2 == "/var/lib/containers/unprivileged" {print $1}')
+    if [[ -n "$parent_dataset" ]]; then
+      local user_dataset="$parent_dataset/$USERNAME"
+      if ! zfs_dataset_exists "$user_dataset"; then
+        bro_info "Auto-detected parent dataset: $parent_dataset"
+        create_zfs_dataset "$user_dataset"
+      fi
+    fi
+  fi
+  
+  # Copy skeleton files
+  copy_skeleton
+  
+  # Setup subuid/subgid ranges
+  setup_subid_ranges
+  
+  # Setup container configurations
+  setup_container_configs
+  
+  # Enable lingering
+  enable_lingering
+  
+  bro_info "User $USERNAME configured successfully for rootless containers"
+  bro_info "Home directory: $USERNAME_HOME"
+  bro_info "Storage root: $GRAPHROOT"
+}
+
+# Execute main function
+main "$@"

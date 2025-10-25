@@ -1,7 +1,7 @@
 #!/bin/bash
 # Repository verification script
 
-echo "🔍 Verifying APT repository signatures..."
+echo "🔍 Verifying GH-Repos APT repository signatures..."
 
 # Auto-detect script location and find repository root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
