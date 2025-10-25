@@ -1,0 +1,34 @@
+#!/bin/bash
+set -e
+
+# Set proper permissions on brothaman scripts
+chmod 755 /usr/local/bin/bro-*
+
+# Set permissions on configuration directory
+chmod 755 /etc/brothaman
+chmod 644 /etc/brothaman/config
+
+# Set permissions on shared library
+chmod 755 /usr/local/share/brothaman
+chmod 644 /usr/local/share/brothaman/bro-common
+
+# Create brothaman group if it doesn't exist
+if ! getent group brothaman >/dev/null 2>&1; then
+    addgroup --system brothaman
+fi
+
+echo "Brothaman scripts installed successfully!"
+echo "Configuration available in: /etc/brothaman/config"
+echo "Shared library available at: /usr/local/share/brothaman/bro-common"
+echo ""
+echo "Available commands:"
+echo "  bro-compose      - Container compose management"
+echo "  bro-doctor       - System diagnostics"
+echo "  bro-install-deps - Install system dependencies" 
+echo "  bro-install-podman - Install Podman"
+echo "  bro-install-zfs  - Install ZFS utilities"
+echo "  bro-service      - Service management"
+echo "  bro-test-zpool   - Test ZFS pool operations"
+echo "  bro-user         - User management utilities"
+
+#DEBHELPER#

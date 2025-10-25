@@ -1,0 +1,27 @@
+# Brothaman Configuration File
+# This file contains default settings for brothaman scripts
+
+# Logging level (INFO, WARN, ERROR)
+BRO_LOG_LEVEL=INFO
+
+# Default ZFS pool for brothaman operations
+# BRO_ZFS_POOL=tank
+
+# Default user for rootless operations
+# BRO_DEFAULT_USER=brothaman
+
+# Ansible configuration
+BRO_ANSIBLE_INVENTORY=localhost,
+BRO_ANSIBLE_CONNECTION=local
+
+# Podman configuration
+BRO_PODMAN_NETWORK=podman
+BRO_PODMAN_STORAGE_DRIVER=overlay
+
+# Service management defaults
+BRO_SYSTEMD_USER_MODE=true
+BRO_SERVICE_TIMEOUT=30
+
+# Installation preferences
+BRO_APT_NONINTERACTIVE=true
+BRO_INSTALL_RECOMMENDS=false

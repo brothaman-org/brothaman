@@ -1,0 +1,183 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2312
+# bro-common.sh — shared helpers for Brothaman scripts
+# OS baseline: Debian 12 (bookworm)
+
+set -Eeuo pipefail
+
+# Pretty logging ---------------------------------------------------------------
+
+# Old shit to fix according to new log functions --- we want the  bro_run_ansible() to work
+# bro_log()   { printf "[bro] %s\n" "$*"; }
+# need_cmd()  { command -v "$1" >/dev/null 2>&1 || bro_die "missing command: $1"; }
+
+# # run ansible playbook for localhost; map bro-* to ansible/playbooks/bro-*.yml
+# bro_run_ansible() {
+#   local cmd="$1"; shift || true
+#   local play="${ROOT_DIR}/ansible/playbooks/${cmd}.yml"
+#   need_cmd ansible-playbook
+#   if [[ ! -f "$play" ]]; then
+#     bro_die "missing playbook: $play"
+#   }
+#   bro_log "running ansible: $play"
+#   ANSIBLE_LOCALHOST_WARNING=false ansible-playbook -i localhost, -c local --become "$play"
+# }
+
+# # placeholder helpers
+# as_user() { sudo -u "$1" -H bash -lc "${*:2}"; }
+# write_file() { local p="$1"; shift; mkdir -p "$(dirname "$p")"; printf "%s" "$*" >"$p"; }
+
+
+_bro_log_ts() { date +"%Y-%m-%d %H:%M:%S%z"; }
+
+bro_info()  { echo "[INFO  $(_bro_log_ts)] $*"; }
+bro_warn()  { echo "[WARN  $(_bro_log_ts)] $*" >&2; }
+bro_error() { echo "[ERROR $(_bro_log_ts)] $*" >&2; }
+
+# Root check -------------------------------------------------------------------
+
+bro_require_root() {
+  if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+    bro_error "This script must run as root. Try: sudo $0 $*"
+    exit 1
+  fi
+}
+
+# Version comparison -----------------------------------------------------------
+# Numeric comparison of semantic-like versions: MAJOR.MINOR.MICRO (extra components allowed)
+# Returns (via exit code and stdout):
+#   echo  1  -> v1 > v2
+#   echo  0  -> v1 = v2
+#   echo -1  -> v1 < v2
+# Usage:
+#   cmp=$(bro_version_compare "4.3.1" "4.3.10")  # -> -1
+# NOTE: comparison is strictly numeric per component (no lexical traps).
+
+# --- version compare (hardened: always override previous defs) -----------------
+unset -f bro_version_compare 2>/dev/null || true
+
+bro_version_compare() {
+  # Compare two version strings component-wise (dot or dash separated)
+  # Returns: 1 if v1 > v2, 0 if equal, -1 if v1 < v2
+  local v1="${1:-}" v2="${2:-}"
+  [[ -z "${v1}" && -z "${v2}" ]] && { echo 0; return 0; }
+
+  local IFS='.-' a b i
+  read -ra a <<< "${v1}"
+  read -ra b <<< "${v2}"
+
+  local maxlen=$(( ${#a[@]} > ${#b[@]} ? ${#a[@]} : ${#b[@]} ))
+  for (( i=0; i<maxlen; i++ )); do
+    local c1="${a[i]:-0}" c2="${b[i]:-0}"
+    c1="${c1%%[^0-9]*}"
+    c2="${c2%%[^0-9]*}"
+    (( 10#${c1:-0} > 10#${c2:-0} )) && { echo 1; return 0; }
+    (( 10#${c1:-0} < 10#${c2:-0} )) && { echo -1; return 0; }
+  done
+  echo 0
+}
+
+bro_version_compare3() {
+  local v1="${1:-0}" v2="${2:-0}"
+  IFS='.' read -r -a a1 <<<"${v1}"
+  IFS='.' read -r -a a2 <<<"${v2}"
+  local len="${#a1[@]}"
+  (( ${#a2[@]} > len )) && len="${#a2[@]}"
+
+  for (( i=0; i<len; i++ )); do
+    local c1="${a1[i]:-0}" c2="${a2[i]:-0}"
+    # keep only the leading digits for each component (strip tails)
+    local n1="${c1%%[^0-9]*}"
+    local n2="${c2%%[^0-9]*}"
+    [[ -z "${n1}" ]] && n1=0
+    [[ -z "${n2}" ]] && n2=0
+
+    if   (( 10#${n1} > 10#${n2} )); then echo 1; return 0
+    elif (( 10#${n1} < 10#${n2} )); then echo -1; return 0
+    fi
+  done
+
+  echo 0
+  return 0
+}
+
+
+bro_version_compare2() {
+  local v1="${1:-0}" v2="${2:-0}"
+  IFS='.' read -r -a a1 <<<"${v1}"
+  IFS='.' read -r -a a2 <<<"${v2}"
+
+  local len="${#a1[@]}"
+  (( ${#a2[@]} > len )) && len="${#a2[@]}"
+
+  for (( i=0; i<len; i++ )); do
+    local n1="${a1[i]:-0}" n2="${a2[i]:-0}"
+    n1="${n1//[^0-9]/}" ; [[ -z "${n1}" ]] && n1=0
+    n2="${n2//[^0-9]/}" ; [[ -z "${n2}" ]] && n2=0
+    if   (( 10#${n1} > 10#${n2} )); then echo 1; return 0
+    elif (( 10#${n1} < 10#${n2} )); then echo -1; return 0
+    fi
+  done
+
+  echo 0
+  return 0
+}
+# -------------------------------------------------------------------------------
+
+
+bro_version_compare1() {
+  local v1="${1:-0}" v2="${2:-0}"
+  IFS='.' read -r -a a1 <<<"${v1}"
+  IFS='.' read -r -a a2 <<<"${v2}"
+  local len="${#a1[@]}"
+  (( ${#a2[@]} > len )) && len="${#a2[@]}"
+
+  for (( i=0; i<len; i++ )); do
+    local n1="${a1[i]:-0}" n2="${a2[i]:-0}"
+    n1="${n1//[^0-9]/}" ; [[ -z "${n1}" ]] && n1=0
+    n2="${n2//[^0-9]/}" ; [[ -z "${n2}" ]] && n2=0
+    if   (( 10#${n1} > 10#${n2} )); then echo 1; return 0
+    elif (( 10#${n1} < 10#${n2} )); then echo -1; return 0
+    fi
+  done
+  echo 0
+  return 0
+}
+
+# Debian 12 sanity -------------------------------------------------------------
+
+bro_require_debian12() {
+  if [[ -r /etc/os-release ]]; then
+    # shellcheck disable=SC1091
+    . /etc/os-release
+    if [[ "${ID:-}" != "debian" || "${VERSION_CODENAME:-}" != "bookworm" ]]; then
+      bro_warn "This script targets Debian 12 (bookworm). Detected: ID=${ID:-?} CODENAME=${VERSION_CODENAME:-?}"
+    fi
+  else
+    bro_warn "/etc/os-release not found; cannot verify OS."
+  fi
+}
+
+# Apt helpers ------------------------------------------------------------------
+
+bro_apt_update() {
+  bro_info "Running apt-get update…"
+  apt-get update -y
+}
+
+bro_apt_install() {
+  # usage: bro_apt_install pkg1 pkg2 ...
+  if [[ $# -gt 0 ]]; then
+    bro_info "Installing packages: $*"
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "$@"
+  fi
+}
+
+bro_apt_purge() {
+  # usage: bro_apt_purge pattern1 pattern2 ...
+  if [[ $# -gt 0 ]]; then
+    bro_warn "Purging packages: $*"
+    DEBIAN_FRONTEND=noninteractive apt-get purge -y "$@" || true
+    DEBIAN_FRONTEND=noninteractive apt-get autoremove -y --purge || true
+  fi
+}

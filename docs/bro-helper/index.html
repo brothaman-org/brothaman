@@ -1,0 +1,1338 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../quadlet-patterns/">
+      
+      
+        <link rel="next" href="../user-scope/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.22">
+    
+    
+      
+        <title>Network Helper - Brothaman</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.84d31ad4.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#brothamans-proxyd-helper" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Brothaman" class="md-header__button md-logo" aria-label="Brothaman" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Brothaman
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Network Helper
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Brothaman" class="md-nav__button md-logo" aria-label="Brothaman" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Brothaman
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../directions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Development Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../project-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Project Plan
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Architecture
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Architecture
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Architecture Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../socket-activation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Socket Activation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quadlet-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quadlet Patterns
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Components
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Components
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Network Helper
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Network Helper
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#so-what-why-do-we-need-this" class="md-nav__link">
+    <span class="md-ellipsis">
+      So what? Why do we need this?
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="So what? Why do we need this?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-both-together-sucks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using both together sucks
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-restrictions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Security Restrictions
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Restrictions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-the-unit-file-constrains-what-the-process-can-ever-have" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. The unit file constrains what the process can ever have
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-the-program-drops-capabilities-as-soon-as-its-done-with-setns" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. The program drops capabilities as soon as it’s done with setns()
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-it-does-conceptually" class="md-nav__link">
+    <span class="md-ellipsis">
+      What it does (conceptually)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-it-needs-some-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why it needs (some) capabilities
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#more-security-options-for-the-next-iteration" class="md-nav__link">
+    <span class="md-ellipsis">
+      More security options for the next iteration
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    User Scope
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../unprivileged-podman/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Unprivileged Podman
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../zfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    ZFS
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../users-and-lingering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Users & Lingering
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compose-conversion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Compose Conversion
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dictionary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Dictionary
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Labs
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            Labs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../labs/0.%20setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Setup
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../labs/1.%20lingering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Lingering
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../labs/2.%20quadlet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quadlet
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../labs/3.%20volumes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Volumes
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../labs/4.%20debugging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Debugging
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../labs/5.%20networking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Networking
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../labs/6.%20pgadmin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    PgAdmin
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../labs/7.%20pod/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Pod Management
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../labs/proxyd-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Proxy Testing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Diagrams
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            Diagrams
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagrams/architecture.mmd" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    System Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagrams/per-service-pattern.mmd" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service Pattern
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#so-what-why-do-we-need-this" class="md-nav__link">
+    <span class="md-ellipsis">
+      So what? Why do we need this?
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="So what? Why do we need this?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-both-together-sucks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using both together sucks
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-restrictions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Security Restrictions
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Restrictions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-the-unit-file-constrains-what-the-process-can-ever-have" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. The unit file constrains what the process can ever have
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-the-program-drops-capabilities-as-soon-as-its-done-with-setns" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. The program drops capabilities as soon as it’s done with setns()
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-it-does-conceptually" class="md-nav__link">
+    <span class="md-ellipsis">
+      What it does (conceptually)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-it-needs-some-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why it needs (some) capabilities
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#more-security-options-for-the-next-iteration" class="md-nav__link">
+    <span class="md-ellipsis">
+      More security options for the next iteration
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="brothamans-proxyd-helper">Brothaman's Proxyd Helper</h1>
+<p>The <strong><code>bro-helper</code></strong> enables <strong><code>systemd-socket-proxyd</code></strong> instances to be exec'd inside the network namespace of containers. By doing so it allows it to proxy traffic from a systemd.socket's file descriptor to container ports that network services bind to on container interfaces.</p>
+<ol>
+<li>Allows for <code>--network=none</code> for toighter security</li>
+<li>Proxied network services can bind to loopback interfaces</li>
+<li>Single hop proxy (one less without podman's -p mappings)</li>
+<li>Enables traffic triggering and on-demand container start</li>
+<li>Primitive used to enable cross over dependencies between unprivileged containers</li>
+</ol>
+<h2 id="so-what-why-do-we-need-this">So what? Why do we need this?</h2>
+<p>Unprivileged containers using <strong><code>slirp4netns</code></strong> or <strong><code>pasta</code></strong> (or <code>--network=none</code> for that matter) have no IP addresses exposed to the host, and hence no ports to proxy traffic to the container with <code>systemd-socket-proxyd</code>. So why do we even bother using <code>systemd-socket-proxyd</code> when the -p switch could be used to proxy traffic from the host to the container: i.e. <code>-p 8080:80</code>?</p>
+<blockquote>
+<p><strong>ROOT CAUSE</strong>: Podman's proxy mechanism does not work with systemd.socket traffic triggering nor does it support server socket (listener) file descriptor passing while <code>systemd-socket-proxyd</code> does.</p>
+</blockquote>
+<h3 id="using-both-together-sucks">Using both together sucks</h3>
+<p>You could make them both work together. Presume an NGINX container with the daemon running on its default port 80. Unprivileged containers cannot map container ports to host ports below 1024 so we make podman proxy host port 8080 to container port 80.</p>
+<p>Yet we still want to trigger containers to start when traffic appears using systemd sockets. Say we use a port for it at 8081. Then the <code>systemd-socket-proxyd</code> daemon proxies traffic to and from port 8080 to 8081.</p>
+<p>Using them together now doubles the proxied traffic overhead which adds latency and you have an extra bogus port sitting out there. With <code>bro-helper</code> one host port and one container port is needed. Most importantly, there's no additional stream copy and transfer across ports for absolutely no reason.</p>
+<h2 id="security-restrictions">Security Restrictions</h2>
+<p>The <code>bro-helper</code> is a tiny c-program with slightly augmented capabilities allowing it to set the netns and spawns commands within it. It can exec <code>systemd-socket-proxyd</code>, <code>ip</code>, and <code>netstat</code> commands only. Furthermore, it only works on containers running as the invoking user.</p>
+<p>Least privilege is achieved by using a very narrow capability addition while using that capability in highly specific situations. Meanwhile we do not fork and honor the passed host file descriptors (listener socket) so are handed off to <code>systemd-socket-proxyd</code> running in the container.</p>
+<ul>
+<li>Find the netns you want (e.g., /proc/${PID}/ns/net),</li>
+<li>Join it with setns(fd, CLONE_NEWNET),</li>
+<li>Drop any capabilities it no longer needs,</li>
+<li>Exec the target process.</li>
+</ul>
+<p>That's it—no daemons, no forking trees, just a short, auditable path.</p>
+<p>Two layers work together to maintain least privilege:</p>
+<h3 id="1-the-unit-file-constrains-what-the-process-can-ever-have">1. The <strong>unit file</strong> constrains what the process can ever have</h3>
+<ul>
+<li><code>CapabilityBoundingSet=CAP_SYS_ADMIN CAP_NET_ADMIN</code><br />
+    → <em>Even if</em> the binary tried, it <strong>cannot</strong> gain caps outside this set.</li>
+<li><code>AmbientCapabilities=CAP_SYS_ADMIN CAP_NET_ADMIN</code> (or file caps on the binary)<br />
+    → Ensures the helper <strong>starts</strong> with just the tiny set it needs.</li>
+<li><code>NoNewPrivileges=no</code><br />
+    → Required if you rely on ambient caps or file caps across <code>execve()</code>.</li>
+</ul>
+<h3 id="2-the-program-drops-capabilities-as-soon-as-its-done-with-setns">2. The <strong>program drops capabilities</strong> as soon as it’s done with <code>setns()</code></h3>
+<p>Right after <code>setns()</code>, it <strong>clears its capability sets</strong> so the final <code>exec()</code>ed program runs unprivileged (or with only what you explicitly keep). Concretely:</p>
+<ul>
+<li>Use <strong>libcap</strong> to set <strong>effective+permitted+inheritable = empty</strong> before <code>execvp()</code>.</li>
+<li>Optionally lock things down further by dropping from the <strong>bounding set</strong> via <code>prctl(PR_CAPBSET_DROP, ...)</code> (irreversible for the lifetime of the process).</li>
+<li>Optionally set <code>PR_SET_NO_NEW_PRIVS</code> to 1 after dropping caps.</li>
+</ul>
+<p>Result: the helper temporarily uses <code>CAP_SYS_ADMIN</code> to perform <strong>one</strong> privileged kernel call, then throws away the keys.</p>
+<h2 id="what-it-does-conceptually">What it does (conceptually)</h2>
+<ul>
+<li><strong>Inputs:</strong> <code>--pid &lt;PID&gt;</code> (or sometimes <code>--netns-path &lt;path&gt;</code>), <code>-- &lt;cmd&gt; [args…]</code></li>
+<li><strong>Open the namespace:</strong> <code>fd = open("/proc/PID/ns/net", O_RDONLY|O_CLOEXEC)</code></li>
+<li><strong>Join it:</strong> <code>setns(fd, CLONE_NEWNET)</code></li>
+<li><strong>Harden &amp; de-priv:</strong></li>
+<li>Clear dangerous env (PATH, IFS if you're paranoid), set <code>umask(077)</code></li>
+<li><strong>Drop capabilities</strong> (details below)</li>
+<li>Optionally set <code>prctl(PR_SET_NO_NEW_PRIVS, 1)</code> after dropping caps      </li>
+<li><strong>Hand off:</strong> <code>execvp("systemd-socket-proxyd", argv)</code><br />
+    From here, <em>proxyd</em> runs <strong>inside</strong> that netns, inheriting only the minimal privileges you allow.</li>
+</ul>
+<h2 id="why-it-needs-some-capabilities">Why it needs (some) capabilities</h2>
+<ul>
+<li>To call <code>setns(CLONE_NEWNET)</code> into a netns you don't “own”, the kernel requires <strong><code>CAP_SYS_ADMIN</code> in the owning user namespace</strong> of that netns. We own it but are still required to have the permission.</li>
+<li>You <strong>don’t</strong> need <code>CAP_NET_ADMIN</code> to <em>enter</em> the netns, but tools you run <strong>inside</strong> (like <code>ip addr</code>) may need it to mutate interfaces. <code>systemd-socket-proxyd</code> typically doesn't need <code>CAP_NET_ADMIN</code>; it just opens sockets.</li>
+<li>So: <strong>minimum to enter</strong> is <code>CAP_SYS_ADMIN</code>. If you <em>also</em> run diagnostics like <code>ip</code> inside the netns, give <code>CAP_NET_ADMIN</code> too (and then drop it before you <code>exec proxyd</code> if proxyd doesn’t need it).</li>
+</ul>
+<h2 id="more-security-options-for-the-next-iteration">More security options for the next iteration</h2>
+<ul>
+<li><strong>Validate the target</strong>: ensure the PID exists and (optionally) matches the expected user/UID for your trust model.</li>
+<li><strong>Avoid TOCTOU</strong>: once you open the netns fd, you're safe; don't re-resolve paths again.</li>
+<li><strong>Logging</strong>: on failure, log <code>errno</code> and the exact syscall (helps when seccomp/LSM interferes).</li>
+<li><strong>Interface</strong>: support <code>--netns-path</code> as an alternative to <code>--pid</code>, so you can bind a stable symlink like <code>/run/netns/nginx-proxyd</code>.</li>
+</ul>
+<p>This is why the approach is safe and composable: <strong>short-lived privilege</strong>, <strong>immediate drop</strong>, <strong>tight unit caps</strong>, and the actual worker (<code>systemd-socket-proxyd</code>) runs with <strong>regular user privileges</strong> in the desired netns.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.sections", "content.code.copy"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>

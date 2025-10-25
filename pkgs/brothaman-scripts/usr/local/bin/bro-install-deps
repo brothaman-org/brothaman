@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 && pwd)"
+ROOT_DIR="${SCRIPT_DIR}/.."
+source "${ROOT_DIR}/lib/bro-common"
+
+MODE="ansible"
+ARGS=()
+for a in "$@"; do
+  case "$a" in
+    --script) MODE="script" ;;
+    *) ARGS+=("$a") ;;
+  esac
+done
+
+if [[ "$MODE" == ansible ]]; then
+  bro_run_ansible "$(basename "$0")" "${ARGS[@]:-}"
+  exit 0
+fi
+
+# --- shell mode ---
+bro_log "(shell mode) bro-install-deps would install Podman + dependencies here."

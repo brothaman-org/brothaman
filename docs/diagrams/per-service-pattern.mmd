@@ -1,0 +1,4 @@
+flowchart TD
+A[NAME.socket] --> B[NAME-proxy.service]
+B --> C[NAME.container]
+C -->|binds| D[127.0.0.1:INTERNAL_PORT]

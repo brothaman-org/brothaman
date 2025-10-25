@@ -1,0 +1,48 @@
+Package: brothaman-helper
+Version: 1.0.0
+Section: admin
+Priority: optional
+Architecture: amd64
+Depends: libc6 (>= 2.34)
+Maintainer: brothaman <brothaman@example.com>
+Description: Network namespace helper utility for brothaman
+ A security-focused helper utility that allows specific network commands
+ to be executed within network namespaces owned by the same user.
+ .
+ This tool provides controlled access to network namespaces for utilities
+ like curl, ip, netstat, and systemd-socket-proxyd while maintaining
+ security by validating namespace ownership.
+Filename: pool/brothaman-helper_1.0.0_amd64.deb
+Size: 275532
+MD5sum: 5a799a6b5699c11de22673c9ee2aa4c8
+SHA1: b3e955db1c61191eaabfca76c99d5559c0bb68be
+SHA256: 9597c2f035402f3fffe61fa7fc2d31915fc8cc0a27113258e20997260be2a3ab
+
+Package: brothaman-scripts
+Version: 1.0.0
+Section: admin
+Priority: optional
+Architecture: all
+Depends: bash (>= 4.0), coreutils, systemd, sudo
+Recommends: podman, zfsutils-linux, ansible
+Maintainer: brothaman <brothaman@example.com>
+Description: Brothaman shell script collection and shared library
+ A comprehensive collection of shell scripts for managing containers,
+ ZFS storage, and system services with brothaman. Includes the shared
+ bro-common library used by all brothaman tools.
+ .
+ Scripts include:
+  - bro-compose: Container compose management
+  - bro-service: Service lifecycle management
+  - bro-install-*: Installation utilities for dependencies
+  - bro-user: User management utilities
+  - bro-doctor: System diagnostics and health checks
+ .
+ All scripts follow consistent conventions and use the shared bro-common
+ library for logging, version comparison, and system utilities.
+Filename: pool/brothaman-scripts_1.0.0_all.deb
+Size: 6012
+MD5sum: 93c3f96ea1e5ae05870d32e8d46143ca
+SHA1: dfdce52b7b4e99535e063b6b17e5d5fb34fbcf99
+SHA256: 0059e35c7a50de9e7ae45e8b2fbd412534212c28d7540691149283d5759fedcc
+

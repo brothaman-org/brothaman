@@ -1,0 +1,210 @@
+#!/usr/bin/env bash
+# bro-install-podman — Debian 12 installer that prefers alvistack OBS builds
+# Modes: --install (default) | --remove | --ensure-repo
+# Style: braces around all variables; ShellCheck-clean
+
+set -Eeuo pipefail
+set -o errtrace
+
+# ==============================================================================
+# BRO_COMMON resolution
+# ==============================================================================
+if [[ -z "${BRO_COMMON:-}" ]]; then
+  if [[ -r "/usr/local/share/brothaman/bro-common" ]]; then
+    export BRO_COMMON="/usr/local/share/brothaman/bro-common"
+  else
+    _self="${BASH_SOURCE[0]}"
+    _self_dir="$(cd -- "$(dirname -- "${_self}")" && pwd)"
+    export BRO_COMMON="${_self_dir%/}/../lib/bro-common"
+  fi
+fi
+
+if [[ ! -r "${BRO_COMMON}" ]]; then
+  echo "[ERROR] BRO_COMMON not readable at: ${BRO_COMMON}" >&2
+  exit 2
+fi
+
+# shellcheck disable=SC1090
+source "${BRO_COMMON}"
+
+# ==============================================================================
+# Environment and config
+# ==============================================================================
+if [[ -r "/etc/brothaman.env" ]]; then
+  # shellcheck disable=SC1091
+  source /etc/brothaman.env
+fi
+
+readonly ALVISTACK_VERSION="${ALVISTACK_VERSION:-5.6.2}"
+
+readonly ALVISTACK_LIST="/etc/apt/sources.list.d/home:alvistack.list"
+readonly ALVISTACK_URL="http://downloadcontent.opensuse.org/repositories/home:/alvistack/Debian_12/"
+readonly ALVISTACK_KEY_URL="https://download.opensuse.org/repositories/home:/alvistack/Debian_12/Release.key"
+
+EXTRA_PKGS=(
+  conmon containers-common containernetworking-plugins containernetworking
+  cri-o-runc catatonit netavark aardvark-dns slirp4netns podman-plugins
+  fuse-overlayfs uidmap passt
+)
+
+# ==============================================================================
+# Logging helpers
+# ==============================================================================
+log()  { printf '[INFO ] %s\n' "$*"; }
+warn() { printf '[WARN ] %s\n' "$*" >&2; }
+err()  { printf '[ERROR] %s\n' "$*" >&2; }
+die()  { err "$*"; exit 1; }
+
+# ==============================================================================
+# Core helpers
+# ==============================================================================
+need_root() { [[ "${EUID}" -eq 0 ]] || die "Must run as root."; }
+
+# Quiet apt-get update but keep log trace
+apt_update_quiet() {
+  log "Refreshing apt package index..."
+  DEBIAN_FRONTEND=noninteractive apt-get update -y -o APT::Update::Error-Mode=any \
+    >/dev/null 2>&1 || warn "apt update failed (network or repo issue)"
+}
+
+apt_install() {
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "$@" >/dev/null
+}
+
+apt_purge() {
+  DEBIAN_FRONTEND=noninteractive apt-get purge -y "$@" >/dev/null
+}
+
+apt_autoremove() {
+  DEBIAN_FRONTEND=noninteractive apt-get autoremove -y --purge >/dev/null
+}
+
+is_installed() { dpkg -s "${1}" >/dev/null 2>&1; }
+
+dpkg_version_of() { dpkg-query -W -f='${Version}\n' "${1}" 2>/dev/null || true; }
+
+installed_ge_minimum() {
+  local current
+  current="$(dpkg_version_of "podman")"
+  [[ -z "${current}" ]] && return 1
+  local cmp
+  cmp="$(bro_version_compare "${current}" "${ALVISTACK_VERSION}")"
+  [[ "${cmp}" == "1" || "${cmp}" == "0" ]]
+}
+
+ensure_alvistack_repo() {
+  need_root
+  if [[ ! -s "${ALVISTACK_LIST}" ]]; then
+    log "alvistack repo missing; configuring ${ALVISTACK_LIST}"
+    tmpkey="$(mktemp)"
+    curl -fsSL "${ALVISTACK_KEY_URL}" -o "${tmpkey}"
+    install -m 0644 -o root -g root "${tmpkey}" /etc/apt/trusted.gpg.d/home_alvistack.asc
+    rm -f -- "${tmpkey}"
+    echo "deb ${ALVISTACK_URL} /" > "${ALVISTACK_LIST}"
+  fi
+  apt_update_quiet
+}
+
+purge_conflicting() {
+  need_root
+  local candidates=(podman podman-rootless docker.io docker-ce docker-ce-cli docker-compose-plugin crun runc buildah)
+  local to_remove=()
+  for pkg in "${candidates[@]}"; do
+    is_installed "${pkg}" && to_remove+=("${pkg}")
+  done
+  (( ${#to_remove[@]} )) || { log "No conflicting packages installed."; return 0; }
+  log "Removing: ${to_remove[*]}"
+  apt_purge "${to_remove[@]}" || true
+  apt_autoremove || true
+}
+
+# ==============================================================================
+# Install routines
+# ==============================================================================
+install_podman_core() {
+  need_root
+  if installed_ge_minimum; then
+    log "Podman already installed and meets minimum (${ALVISTACK_VERSION})."
+    return 0
+  fi
+  log "Installing Podman..."
+  apt_install podman || { err "Podman install failed."; return 1; }
+}
+
+install_extras_best_effort() {
+  need_root
+  local missing=()
+  for pkg in "${EXTRA_PKGS[@]}"; do
+    if ! is_installed "${pkg}" && apt-cache show "${pkg}" >/dev/null 2>&1; then
+      missing+=("${pkg}")
+    fi
+  done
+  (( ${#missing[@]} )) || { log "All optional extras already installed."; return 0; }
+  log "Installing optional extras: ${missing[*]}"
+  apt_install "${missing[@]}" || true
+}
+
+# ==============================================================================
+# Command handlers
+# ==============================================================================
+cmd_install() {
+  log "Using bro-common at: ${BRO_COMMON}"
+  ensure_alvistack_repo
+  install_podman_core
+  install_extras_best_effort
+  installed_ge_minimum || warn "Podman version below ${ALVISTACK_VERSION}."
+  if command -v podman >/dev/null 2>&1; then
+    podman --version || true
+  fi
+}
+
+cmd_remove() {
+  need_root
+  log "Removing Podman and related packages..."
+  purge_conflicting
+  log "Done."
+}
+
+cmd_ensure_repo() {
+  ensure_alvistack_repo
+  log "Repo ensured."
+}
+
+usage() {
+  cat <<EOF
+Usage: ${0##*/} [--install|--remove|--ensure-repo]
+
+Modes:
+  --install       Install/upgrade Podman (default)
+  --remove        Remove Podman and related packages
+  --ensure-repo   Ensure alvistack OBS repo is configured
+
+Environment:
+  BRO_COMMON          Path to bro-common library
+                      Default: /usr/local/share/brothaman/bro-common (fallback ../lib/bro-common)
+  ALVISTACK_VERSION   Minimum acceptable version (floor). Default: 5.6.2 or from /etc/brothaman.env
+EOF
+}
+
+main() {
+  local mode="install"
+  if [[ "${#}" -gt 0 ]]; then
+    case "${1}" in
+      --install) mode="install" ;;
+      --remove) mode="remove" ;;
+      --ensure-repo) mode="ensure-repo" ;;
+      -h|--help) usage; exit 0 ;;
+      *) err "Unknown argument: ${1}"; usage; exit 1 ;;
+    esac
+  fi
+
+  case "${mode}" in
+    install) cmd_install ;;
+    remove) cmd_remove ;;
+    ensure-repo) cmd_ensure_repo ;;
+    *) die "unhandled mode: ${mode}" ;;
+  esac
+}
+
+main "$@"
+

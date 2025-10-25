@@ -1,0 +1,1693 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../0.%20setup/">
+      
+      
+        <link rel="next" href="../2.%20quadlet/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.22">
+    
+    
+      
+        <title>Lingering - Brothaman</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.84d31ad4.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#lingering" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Brothaman" class="md-header__button md-logo" aria-label="Brothaman" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Brothaman
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Lingering
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Brothaman" class="md-nav__button md-logo" aria-label="Brothaman" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Brothaman
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../directions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Development Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Project Plan
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Architecture
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Architecture
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Architecture Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../socket-activation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Socket Activation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quadlet-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quadlet Patterns
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Components
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Components
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../bro-helper/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Network Helper
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    User Scope
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../unprivileged-podman/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Unprivileged Podman
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../zfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    ZFS
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../users-and-lingering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Users & Lingering
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../compose-conversion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Compose Conversion
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dictionary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Dictionary
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_11" id="__nav_11_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Labs
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_11">
+            <span class="md-nav__icon md-icon"></span>
+            Labs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0.%20setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Setup
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Lingering
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Lingering
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0-snapshot" class="md-nav__link">
+    <span class="md-ellipsis">
+      0. Snapshot
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-create-an-unprivileged-lingering-user-and-enable-systemd-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Create an unprivileged lingering user and enable systemd commands
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Create an unprivileged lingering user and enable systemd commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#whats-going-on-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's going on here?
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#user-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      User Manager
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="User Manager">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#two-ways-the-user-manager-starts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Two ways the user manager starts
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationship-to-runuserbus" class="md-nav__link">
+    <span class="md-ellipsis">
+      Relationship to /run/user/\/bus
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-create-install-and-start-test-systemd-user-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Create, install, and start test systemd user service
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-reboot-with-lingering" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Reboot with lingering
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-check-if-the-test-service-runs-after-reboot" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Check if the test service runs after reboot
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-disable-lingering-and-reboot" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Disable lingering and reboot
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-check-if-the-test-service-runs-after-reboot-should-not-be-running" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Check if the test service runs after reboot (should NOT be running)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-re-enable-lingering-and-see-what-happens" class="md-nav__link">
+    <span class="md-ellipsis">
+      7. Re-enable lingering and see what happens
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-lessons-learned" class="md-nav__link">
+    <span class="md-ellipsis">
+      8. Lessons learned
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Lessons learned">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-takeaways" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key takeaways
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#practical-implications" class="md-nav__link">
+    <span class="md-ellipsis">
+      Practical implications
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#final-observation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Final observation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-rollback" class="md-nav__link">
+    <span class="md-ellipsis">
+      9. Rollback
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../2.%20quadlet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quadlet
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../3.%20volumes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Volumes
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../4.%20debugging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Debugging
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5.%20networking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Networking
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../6.%20pgadmin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    PgAdmin
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../7.%20pod/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Pod Management
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../proxyd-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Proxy Testing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_12" id="__nav_12_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Diagrams
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_12">
+            <span class="md-nav__icon md-icon"></span>
+            Diagrams
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../diagrams/architecture.mmd" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    System Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../diagrams/per-service-pattern.mmd" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Service Pattern
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#0-snapshot" class="md-nav__link">
+    <span class="md-ellipsis">
+      0. Snapshot
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-create-an-unprivileged-lingering-user-and-enable-systemd-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Create an unprivileged lingering user and enable systemd commands
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Create an unprivileged lingering user and enable systemd commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#whats-going-on-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's going on here?
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#user-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      User Manager
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="User Manager">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#two-ways-the-user-manager-starts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Two ways the user manager starts
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationship-to-runuserbus" class="md-nav__link">
+    <span class="md-ellipsis">
+      Relationship to /run/user/\/bus
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-create-install-and-start-test-systemd-user-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Create, install, and start test systemd user service
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-reboot-with-lingering" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Reboot with lingering
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-check-if-the-test-service-runs-after-reboot" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Check if the test service runs after reboot
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-disable-lingering-and-reboot" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Disable lingering and reboot
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-check-if-the-test-service-runs-after-reboot-should-not-be-running" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Check if the test service runs after reboot (should NOT be running)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-re-enable-lingering-and-see-what-happens" class="md-nav__link">
+    <span class="md-ellipsis">
+      7. Re-enable lingering and see what happens
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-lessons-learned" class="md-nav__link">
+    <span class="md-ellipsis">
+      8. Lessons learned
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. Lessons learned">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-takeaways" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key takeaways
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#practical-implications" class="md-nav__link">
+    <span class="md-ellipsis">
+      Practical implications
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#final-observation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Final observation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-rollback" class="md-nav__link">
+    <span class="md-ellipsis">
+      9. Rollback
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="lingering">Lingering</h1>
+<p>In this lab we will prove that <strong>systemd lingering</strong> works when enabled for an unprivileged user and demonstrate its impact on <strong>user-scoped services</strong> that persist across reboots.</p>
+<ol>
+<li>Create an unprivileged lingering user and enable systemd commands</li>
+<li>Create, install, and start test systemd user-scoped service</li>
+<li>Reboot with lingering</li>
+<li>Check if the test service runs after reboot (should be running)</li>
+<li>Disable lingering and reboot</li>
+<li>Check if the test service runs after reboot (should NOT be running)</li>
+<li>Re-enable lingering again and see what happens</li>
+<li>Lessons learned</li>
+</ol>
+<h2 id="0-snapshot">0. Snapshot</h2>
+<p>Since this test runs inside a Vagrant VM, capture a baseline snapshot before making any changes. From your host machine (in the same directory as your Vagrantfile):</p>
+<pre><code class="language-shell">if ! vagrant snapshot list 2&gt;&amp;1 | grep before-starting &gt;/dev/null; then
+  vagrant snapshot save before-starting;
+else
+  echo before-starting snapshot already exists;
+fi
+</code></pre>
+<p>This allows you to roll the VM back to its exact pre-test state later.</p>
+<h2 id="1-create-an-unprivileged-lingering-user-and-enable-systemd-commands">1. Create an unprivileged lingering user and enable systemd commands</h2>
+<blockquote>
+<p><strong>ATTENTION</strong>: Make sure to SSH into the vagrant vm with <code>vagrant ssh</code></p>
+</blockquote>
+<p>Create a dedicated unprivileged test user:</p>
+<pre><code class="language-bash"># create and check user
+sudo useradd -m -s /bin/bash lingeruser
+id lingeruser
+getent passwd lingeruser
+sudo -iu lingeruser ls -ld .
+</code></pre>
+<p>This ensures the user got created with home directory (<code>/home/lingeruser</code>) and we can execute commands as the user. Now let's make the user linger but notice the checks before and after for an instance of systemd running as the lingeruser:</p>
+<pre><code class="language-bash">echo &quot;checking if new user's systemd instance is running&quot;
+sudo ps -ux -U lingeruser | grep 'systemd --user' | grep -v grep
+echo no systemd from the ps command ☝️
+echo
+
+# make the user linger
+sudo loginctl enable-linger lingeruser
+echo &quot;checking if new user's systemd instance is running&quot;
+sleep 3
+sudo ps -ux -U lingeruser | grep 'systemd --user' | grep -v grep
+echo see systemd now from the ps command ☝️
+echo
+
+# check if we can use systemctl
+sudo -iu lingeruser systemctl --user list-units
+echo &quot;NOTICE: using systemctl ☝️ fails 😞&quot;
+
+</code></pre>
+<p>Lingering is enabled using the loginctl command. Unfortunately, this user cannot use systemd commands until some basic settings are set.</p>
+<p>For user-mode systemd commands to work, the <code>XDG_RUNTIME_DIR</code> and <code>DBUS_SESSION_BUS_ADDRESS</code> shell variables <strong>MUST BE</strong> correctly set. We can do that system wide for all unprivileged users by adding the following script in <code>/etc/profile.d/xdg_runtime.sh</code>:</p>
+<pre><code class="language-bash">cat | sudo tee /etc/profile.d/xdg_runtime.sh &lt;&lt;'EOF'
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
+export DBUS_SESSION_BUS_ADDRESS=unix:path=${XDG_RUNTIME_DIR}/bus
+EOF
+
+sudo chmod +x /etc/profile.d/xdg_runtime.sh
+
+sudo -iu lingeruser systemctl --user list-units | tee /dev/null
+echo systemctl ☝️ now succeeds 👏
+
+</code></pre>
+<h3 id="whats-going-on-here">What's going on here?</h3>
+<p>Systemd runs in system mode as root. When "<strong>enabled to</strong>", systemd can also run in user mode with the <code>--user</code> switch. The systemd process actually runs as a specific user. Here in this lab it runs as the lingeruser.</p>
+<p>If you noticed the lingeruser's systemd process was not present before the <code>loginctl enable-linger lingeruser</code> command was run. Running the command fired up the systemd infrastructure for the lingeruser and the ps command after it showed the user's systemd instance now running. Furthermore, the enable-linger command makes sure, the user's systemd instance is always running, even when the user is not logged in.</p>
+<p>Other things are also started. Namely a dbus broker for the user's system components bus. System components, including systemd, talk to one another using this messaging system. In fact, systemctl sends commands to the systemd user instance using this bus. However, to attach to the broker and send commands to the systemd user instance it needs to connect to the bus. These environment variables tell it where to find the bus.</p>
+<h3 id="user-manager">User Manager</h3>
+<p>The user manager is the per-user systemd instance that manages all user-scope units. On a system with systemd, there are two main layers of system management:</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Runs as</th>
+<th>Controls</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>System manager</strong></td>
+<td><code>PID 1</code> (<code>/lib/systemd/systemd</code>)</td>
+<td>system-wide units (<code>/etc/systemd/system/*.service</code>)</td>
+</tr>
+<tr>
+<td><strong>User manager</strong></td>
+<td><code>/lib/systemd/systemd --user</code> (one per logged-in or lingering user)</td>
+<td>per-user units (<code>~/.config/systemd/user/*.service</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>So each logged-in user (or each “lingering” user) gets their own lightweight systemd instance that controls user-scoped services, sockets, timers, and targets. You can see it with <code>ps -u lingeruser | grep systemd</code>.</p>
+<h4 id="two-ways-the-user-manager-starts">Two ways the user manager starts</h4>
+<ol>
+<li>
+<p><strong>Interactive login (default behavior)</strong><br />
+    When a user logs in (via <code>ssh</code>, TTY, desktop, etc.), PAM runs <code>systemd --user</code>, creating <code>/run/user/&lt;uid&gt;/</code> and starting user services like <code>dbus.socket</code>, <code>xdg-desktop-portal.service</code>, etc.</p>
+</li>
+<li>
+<p><strong>Lingering (non-interactive)</strong><br />
+    When you enable lingering via <code>loginctl enable-linger &lt;user&gt;</code>. Systemd ensures that the per-user manager (<code>user@&lt;uid&gt;.service</code>) starts <strong>at boot</strong>, even if the user never logs in. That service runs as root's child process under the system manager and spawns <code>/lib/systemd/systemd --user</code> for that UID.</p>
+</li>
+</ol>
+<h4 id="relationship-to-runuserbus">Relationship to /run/user/\<uid>/bus</h4>
+<p>The <strong>D-Bus session bus</strong> socket at <code>/run/user/&lt;uid&gt;/bus</code> is created and managed by the <strong>user manager</strong>.</p>
+<ul>
+<li>The user manager starts <code>dbus.socket</code> and <code>dbus.service</code> (or <code>dbus-broker.service</code>). </li>
+<li><code>dbus.socket</code> creates the <code>bus</code> socket.</li>
+<li>Any client that connects to <code>/run/user/&lt;uid&gt;/bus</code> triggers D-Bus activation of the broker/service.</li>
+</ul>
+<p>If the user manager isn't running, there's nothing to start <code>dbus.socket</code>, so <code>/run/user/&lt;uid&gt;/bus</code> doesn't exist — even though <code>/run/user/&lt;uid&gt;/</code> might. See it all running:</p>
+<pre><code class="language-shell">vagrant@debian12:~$ sudo loginctl user-status lingeruser 
+lingeruser (1001)
+           Since: Fri 2025-10-17 19:29:45 UTC; 24min ago
+           State: lingering
+          Linger: yes
+            Unit: user-1001.slice
+                  └─user@1001.service
+                    └─init.scope
+                      ├─1801 /lib/systemd/systemd --user
+                      └─1803 &quot;(sd-pam)&quot;
+
+...
+Oct 17 ... systemd[1801]: Starting dbus.socket - D-Bus User Message Bus Socket...
+Oct 17 ... systemd[1801]: Listening on dbus.socket - D-Bus User Message Bus Socket.
+...
+Oct 17 19:29:46 debian12 systemd[1801]: Startup finished in 147ms.
+</code></pre>
+<h2 id="2-create-install-and-start-test-systemd-user-service">2. Create, install, and start test systemd user service</h2>
+<p><strong><em>NOTE: Sudo into the lingeruser with <code>sudo su - lingeruser</code></em></strong></p>
+<p>Let's create the service directory and add lingeruser's new user-scoped systemd service. The service loops forever printing to a log file in /tmp then sleeping for 10 seconds. </p>
+<pre><code class="language-bash">mkdir -p ~/.config/systemd/user
+
+cat &gt; ~/.config/systemd/user/test-linger.service&lt;&lt;'EOF'
+[Unit]
+Description=Lingering Proof Test Service
+
+[Service]
+ExecStart=/bin/bash -c 'while true; do echo &quot;$(date -Is) test-linger running&quot; &gt;&gt; /tmp/test-linger.log; sleep 10; done'
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+
+EOF
+
+</code></pre>
+<p>Enable and start the service like any other service, but for user scope we use the <code>--user</code> switch. We also confirm the service has started and is logging to the file:</p>
+<pre><code class="language-bash">systemctl --user daemon-reload
+systemctl --user enable --now test-linger.service
+systemctl --user status test-linger.service
+systemctl --user list-units --type=service | grep &quot;test-linger&quot;
+tail -f /tmp/test-linger.log
+
+</code></pre>
+<blockquote>
+<p><strong>NOTE</strong>: you might need to type q to quit the systemd unit listing command</p>
+</blockquote>
+<p>Ctrl-C to exit the tail output.</p>
+<h2 id="3-reboot-with-lingering">3. Reboot with lingering</h2>
+<p>Back as vagrant user:</p>
+<p><code>sudo reboot</code></p>
+<h2 id="4-check-if-the-test-service-runs-after-reboot">4. Check if the test service runs after reboot</h2>
+<p>SSH back into the vagrant machine and run this as the vagrant user:</p>
+<p><code>tail -f /tmp/test-linger.log</code></p>
+<p>You might press return then wait for another line to be printed in 10s. Press Ctrl-C to exit the tailed output.</p>
+<h2 id="5-disable-lingering-and-reboot">5. Disable lingering and reboot</h2>
+<pre><code class="language-bash">sudo loginctl disable-linger lingeruser
+sudo reboot
+</code></pre>
+<h2 id="6-check-if-the-test-service-runs-after-reboot-should-not-be-running">6. Check if the test service runs after reboot (should NOT be running)</h2>
+<p>SSH back into the vagrant machine and run this as the vagrant user:</p>
+<pre><code class="language-bash">~/Local/brothaman-labs vagrant ssh                                              Last login: Fri Oct 17 20:11:38 2025 from 192.168.122.1
+vagrant@debian12:~$ tail -f /tmp/test-linger.log
+tail: cannot open '/tmp/test-linger.log' for reading: No such file or directory
+tail: no files remaining
+vagrant@debian12:~$ sleep 10; tail -f /tmp/test-linger.log
+tail: cannot open '/tmp/test-linger.log' for reading: No such file or directory
+tail: no files remaining
+vagrant@debian12:~$ sudo ps -u lingeruser
+    PID TTY          TIME CMD
+</code></pre>
+<p>It is clear nothing is running any longer.</p>
+<h2 id="7-re-enable-lingering-and-see-what-happens">7. Re-enable lingering and see what happens</h2>
+<pre><code class="language-bash">echo &quot;checking if new user's systemd instance is running&quot;
+sudo ps -ux -U lingeruser | grep 'systemd --user' | grep -v grep
+echo no systemd from the ps command ☝️
+echo
+
+# make the user linger
+sudo loginctl enable-linger lingeruser
+echo &quot;checking if new user's systemd instance is running&quot;
+sleep 3
+sudo ps -ux -U lingeruser | grep 'systemd --user' | grep -v grep
+echo see systemd now from the ps command ☝️
+sudo ps -ux -U lingeruser | grep 'test-linger' | grep -v grep
+echo see test-linger shell from the ps command ☝️
+echo
+
+</code></pre>
+<p>Reboot and check again, the service should still be up so long as we do not turn off user lingering.</p>
+<h2 id="8-lessons-learned">8. Lessons learned</h2>
+<p>Through this lab we verified how <strong>systemd’s user-scoped manager</strong> behaves under different conditions and why <strong>lingering</strong> is such an important feature for background or headless service users.</p>
+<h3 id="key-takeaways">Key takeaways</h3>
+<ol>
+<li>
+<p><strong>User-mode systemd is separate from system-mode.</strong><br />
+    Every user runs their own <code>systemd --user</code> instance, called the <em>user manager</em>.<br />
+    This instance controls user-scoped units located under <code>~/.config/systemd/user/</code>.</p>
+</li>
+<li>
+<p><strong>Lingering keeps the user manager alive across reboots and logouts.</strong><br />
+    Without lingering, <code>systemd --user</code> only starts when the user logs in through PAM.<br />
+    With lingering enabled (<code>loginctl enable-linger &lt;user&gt;</code>), the user’s <code>user@UID.service</code> starts at boot, even if they never log in.</p>
+</li>
+<li>
+<p><strong>Environment variables are critical.</strong><br />
+<code>XDG_RUNTIME_DIR</code> and <code>DBUS_SESSION_BUS_ADDRESS</code> must point to <code>/run/user/&lt;uid&gt;</code> and its bus socket so that commands like <code>systemctl --user</code> can talk to the user manager.<br />
+    Adding <code>/etc/profile.d/xdg_runtime.sh</code> ensures these variables exist for all unprivileged users.</p>
+</li>
+<li>
+<p><strong>The D-Bus socket (<code>/run/user/&lt;uid&gt;/bus</code>) belongs to the user manager.</strong><br />
+    It only exists while that per-user <code>systemd --user</code> instance is running.<br />
+    When lingering is disabled or the manager stops, the socket disappears and user-scoped commands fail.</p>
+</li>
+<li>
+<p><strong>Services enabled under <code>default.target</code> survive reboots.</strong><br />
+    Our test service <code>test-linger.service</code> continued running after every reboot while lingering was enabled, and stopped existing once lingering was disabled.</p>
+</li>
+<li>
+<p><strong>Lingering makes user accounts behave like lightweight system services.</strong><br />
+    This is ideal for rootless containers, background daemons (e.g., PostgreSQL, Gitea), or personal automation that must persist without an active session.</p>
+</li>
+<li>
+<p><strong>Each lingered user consumes persistent resources.</strong><br />
+    Because their <code>user@UID.service</code> remains active, each lingering user adds a small amount of memory and process overhead—acceptable for a few users, but not something to enable for hundreds indiscriminately.</p>
+</li>
+</ol>
+<h3 id="practical-implications">Practical implications</h3>
+<ul>
+<li>Use lingering for any <strong>headless service accounts</strong> that must auto-start at boot and not depend on an interactive login.</li>
+<li>Always ensure that <strong><code>dbus-user-session</code></strong> or <strong><code>dbus-broker</code></strong> is installed so the per-user D-Bus bus can start.</li>
+<li>Confirm lingering state with <code>loginctl show-user &lt;user&gt; | grep Linger</code></li>
+<li>Verify the user manager is alive with<code>systemctl status user@$(id -u &lt;user&gt;).service</code></li>
+</ul>
+<h3 id="final-observation">Final observation</h3>
+<p>Once lingering is enabled, a normal unprivileged account becomes a <strong>first-class citizen in systemd's dependency graph</strong> — its services are started, stopped, and monitored just like system-level units.</p>
+<p>Disabling lingering cleanly removes that persistence, returning the user to an ephemeral, login-only environment.</p>
+<h2 id="9-rollback">9. Rollback</h2>
+<p>When finished, restore the VM to the baseline snapshot:</p>
+<pre><code class="language-shell">vagrant snapshot restore before-starting --no-provision
+</code></pre>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.sections", "content.code.copy"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>

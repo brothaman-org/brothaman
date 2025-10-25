@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+
+# Set capabilities on the bro-helper binary
+if command -v setcap >/dev/null 2>&1; then
+    setcap cap_sys_admin+ep /usr/local/bin/bro-helper || {
+        echo "Warning: Failed to set capabilities on /usr/local/bin/bro-helper"
+        echo "You may need to run: sudo setcap cap_sys_admin+ep /usr/local/bin/bro-helper"
+    }
+else
+    echo "Warning: setcap not available. Install libcap2-bin to enable capabilities."
+    echo "After installation, run: sudo setcap cap_sys_admin+ep /usr/local/bin/bro-helper"
+fi
+
+#DEBHELPER#

@@ -1,0 +1,39 @@
+site_name: Brothaman
+# repo_url: https://brothaman.org
+site_dir: docs
+docs_dir: mkdocs
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - content.code.copy
+nav:
+  - Overview: index.md
+  - Getting Started: directions.md
+  - Development Guide: development.md
+  - Project Plan: project-plan.md
+  - Architecture:
+      - Architecture Overview: architecture.md
+      - Socket Activation: socket-activation.md
+      - Quadlet Patterns: quadlet-patterns.md
+  - Components:
+      - Network Helper: bro-helper.md
+      - User Scope: user-scope.md
+      - Unprivileged Podman: unprivileged-podman.md
+  - ZFS: zfs.md
+  - Users & Lingering: users-and-lingering.md
+  - Compose Conversion: compose-conversion.md
+  - Dictionary: dictionary.md
+  - Labs:
+      - Setup: labs/0. setup.md
+      - Lingering: labs/1. lingering.md
+      - Quadlet: labs/2. quadlet.md
+      - Volumes: labs/3. volumes.md
+      - Debugging: labs/4. debugging.md
+      - Networking: labs/5. networking.md
+      - PgAdmin: labs/6. pgadmin.md
+      - Pod Management: labs/7. pod.md
+      - Proxy Testing: labs/proxyd-testing.md
+  - Diagrams:
+      - System Architecture: diagrams/architecture.mmd
+      - Service Pattern: diagrams/per-service-pattern.mmd

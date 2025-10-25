@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Brothaman APT Repository</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 5px; }
+        .package { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Brothaman APT Repository</h1>
+        <p>This is an APT repository hosted on GitHub Pages for <strong>Brothaman</strong>.</p>
+        
+        <h2>Quick Setup</h2>
+        <pre><code># Download and run setup script
+curl -fsSL https://dev.github.io/workspace/apt/repo-setup.sh | bash
+
+# Or manual setup:
+curl -fsSL https://dev.github.io/workspace/apt/apt-repo-pubkey.asc | sudo tee /etc/apt/trusted.gpg.d/workspace.asc > /dev/null
+echo "deb https://dev.github.io/workspace/apt stable main" | sudo tee /etc/apt/sources.list.d/workspace.list
+sudo apt update</code></pre>
+
+        <h2>Available Packages</h2>
+        <div id="packages">
+            <div class="package">
+                <h3>brothaman-helper (1.0.0)</h3>
+                <p>Network namespace helper utility for brothaman
+ A security-focused helper utility that allows specific network commands
+ to be executed within network namespaces owned by the same user.
+ .
+ This tool provides controlled access to network namespaces for utilities
+ like curl, ip, netstat, and systemd-socket-proxyd while maintaining
+ security by validating namespace ownership.</p>
+                <code>sudo apt install brothaman-helper</code>
+            </div>
+            <div class="package">
+                <h3>brothaman-scripts (1.0.0)</h3>
+                <p>Brothaman shell script collection and shared library
+ A comprehensive collection of shell scripts for managing containers,
+ ZFS storage, and system services with brothaman. Includes the shared
+ bro-common library used by all brothaman tools.
+ .
+ Scripts include:
+  - bro-compose: Container compose management
+  - bro-service: Service lifecycle management
+  - bro-install-*: Installation utilities for dependencies
+  - bro-user: User management utilities
+  - bro-doctor: System diagnostics and health checks
+ .
+ All scripts follow consistent conventions and use the shared bro-common
+ library for logging, version comparison, and system utilities.</p>
+                <code>sudo apt install brothaman-scripts</code>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
