@@ -21,6 +21,7 @@ Vagrant.configure("2") do |config|
 #  config.vm.box = "cloud-image/debian-13"
 #  config.vm.box = "generic/debian12"
   config.vm.box = "brothaman/z12"
+  config.vm.synced_folder ".", "/vagrant", disabled: true
 
   config.vm.provision "shell", privileged: true, inline: <<-SHELL
     sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
@@ -71,33 +72,34 @@ Vagrant.configure("2") do |config|
 
     echo "📝 Adding repository to sources..."
     # Add repository to sources
-    echo "deb $REPO_URL/apt stable main" | sudo tee /etc/apt/sources.list.d/gh-repos.list
+    echo "deb $REPO_URL/apt stable main" | sudo tee /etc/apt/sources.list.d/brothaman.list
+    echo "deb https://brothaman-org.github.io/zfs-helper/apt stable main" | sudo tee /etc/apt/sources.list.d/zfs-helper.list
 
     echo "🔄 Updating package list..."
     # Update package list
     sudo apt update
 
     echo "📦 Installing curated packages..."
-    sudo apt-get install -y zfs-helper zfs-helper-client
+    sudo apt-get install -y zfs-helper zfs-helper-client brothaman-helper brothaman-scripts
     echo "🎉 Repository added and packages installed!"
 
   SHELL
 
-  config.vm.synced_folder ".", "/zfs-helper",
-    type: "rsync",
-    create: true,
-    owner: 1001,
-    group: 1001,
-    rsync__chown: true,
-    rsync__auto: false,
-    rsync__args: [
-      "--verbose",
-      "--archive",
-    ],
-    rsync__exclude: [
-      ".git",
-      ".vagrant"
-    ]
+  # config.vm.synced_folder ".", "/brothaman",
+  #   type: "rsync",
+  #   create: true,
+  #   # owner: 1001,
+  #   # group: 1001,
+  #   rsync__chown: true,
+  #   rsync__auto: false,
+  #   rsync__args: [
+  #     "--verbose",
+  #     "--archive",
+  #   ],
+  #   rsync__exclude: [
+  #     ".git",
+  #     ".vagrant"
+  #   ]
 
   config.vm.provider :libvirt do |libvirt|
     libvirt.memory = 4096

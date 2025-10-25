@@ -1,8 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
-SCRIPT_DIR="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 && pwd)"
-ROOT_DIR="${SCRIPT_DIR}/.."
-source "${ROOT_DIR}/lib/bro-common"
+
+# BRO_COMMON resolution
+if [[ -z "${BRO_COMMON:-}" ]]; then
+  if [[ -r "/usr/local/share/brothaman/bro-common" ]]; then
+    export BRO_COMMON="/usr/local/share/brothaman/bro-common"
+  else
+    _self="${BASH_SOURCE[0]}"
+    _self_dir="$(cd -- "$(dirname -- "${_self}")" && pwd)"
+    export BRO_COMMON="${_self_dir%/}/../lib/bro-common"
+  fi
+fi
+
+if [[ ! -r "${BRO_COMMON}" ]]; then
+  echo "[ERROR] BRO_COMMON not readable at: ${BRO_COMMON}" >&2
+  exit 2
+fi
+
+# shellcheck disable=SC1090
+source "${BRO_COMMON}"
 
 MODE="ansible"
 ARGS=()

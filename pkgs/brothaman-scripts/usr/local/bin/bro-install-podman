@@ -121,12 +121,45 @@ purge_conflicting() {
 # ==============================================================================
 # Install routines
 # ==============================================================================
+remove_conflicting_packages() {
+  need_root
+  local conflicting_pkgs=(
+    podman
+    buildah
+    containers-storage
+    golang-github-containers-common
+    golang-github-containers-image
+    containernetworking-plugins
+    aardvark-dns
+    netavark
+    conmon
+    crun
+    fuse-overlayfs
+  )
+  
+  local installed_conflicting=()
+  for pkg in "${conflicting_pkgs[@]}"; do
+    if is_installed "${pkg}"; then
+      installed_conflicting+=("${pkg}")
+    fi
+  done
+  
+  if (( ${#installed_conflicting[@]} > 0 )); then
+    log "Removing conflicting container packages: ${installed_conflicting[*]}"
+    bro_apt_purge "${installed_conflicting[@]}"
+  fi
+}
+
 install_podman_core() {
   need_root
   if installed_ge_minimum; then
     log "Podman already installed and meets minimum (${ALVISTACK_VERSION})."
     return 0
   fi
+  
+  # Remove any conflicting packages first
+  remove_conflicting_packages
+  
   log "Installing Podman..."
   apt_install podman || { err "Podman install failed."; return 1; }
 }
