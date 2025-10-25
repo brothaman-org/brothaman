@@ -4,8 +4,8 @@ Section: admin
 Priority: optional
 Architecture: all
 Depends: bash (>= 4.0), coreutils, systemd, sudo
-Recommends: podman, zfsutils-linux, ansible
-Maintainer: brothaman <brothaman@example.com>
+Recommends: zfsutils-linux, zfs-helper, zfs-helper-client
+Maintainer: brothaman <akarasulu@apache.org>
 Description: Brothaman shell script collection and shared library
  A comprehensive collection of shell scripts for managing containers,
  ZFS storage, and system services with brothaman. Includes the shared
@@ -21,8 +21,8 @@ Description: Brothaman shell script collection and shared library
  All scripts follow consistent conventions and use the shared bro-common
  library for logging, version comparison, and system utilities.
 Filename: pool/brothaman-scripts_1.0.0_all.deb
-Size: 6016
-MD5sum: 91dfd5faddd1fa03797aca2c1d1629c2
-SHA1: 245dc03cae523c1e8a7401dc408a69283797ef79
-SHA256: 2b1800cb8b8aa4fae4c5351547712f78db98458e155c7f77c09ea82d7608d6be
+Size: 6024
+MD5sum: d67e895d41098774f4bc75c37d56f160
+SHA1: 7fd53b12a0ba4c483e93398880eab6e25af5efb6
+SHA256: 74e3d0531ee3027602c6df3ee1a6e432e527dad6a8c74116e6432650c8d07891
 

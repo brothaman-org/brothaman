@@ -13,10 +13,10 @@ Description: Network namespace helper utility for brothaman
  like curl, ip, netstat, and systemd-socket-proxyd while maintaining
  security by validating namespace ownership.
 Filename: pool/brothaman-helper_1.0.0_amd64.deb
-Size: 275540
-MD5sum: 08b21a5c3ee0d17dd913c045bbd0a12c
-SHA1: 90d64f13ec2ba5c2e1cb92ab85bfd502d2b3db5f
-SHA256: 65e34ceb7cf8c810f74b93c69ea04acb892ec98ba73388004ec74152477b0588
+Size: 275476
+MD5sum: f76c29021f3550128aca6f0b8c45cd20
+SHA1: 8f3414d4fd41631dfd07471ab09ef269c6bfdac6
+SHA256: 11ff96313c8c9314deb3974fcf4adfc042b81d1febd7f8a56646712346048bb9
 
 Package: brothaman-scripts
 Version: 1.0.0
@@ -24,8 +24,8 @@ Section: admin
 Priority: optional
 Architecture: all
 Depends: bash (>= 4.0), coreutils, systemd, sudo
-Recommends: podman, zfsutils-linux, ansible
-Maintainer: brothaman <brothaman@example.com>
+Recommends: zfsutils-linux, zfs-helper, zfs-helper-client
+Maintainer: brothaman <akarasulu@apache.org>
 Description: Brothaman shell script collection and shared library
  A comprehensive collection of shell scripts for managing containers,
  ZFS storage, and system services with brothaman. Includes the shared
@@ -41,8 +41,8 @@ Description: Brothaman shell script collection and shared library
  All scripts follow consistent conventions and use the shared bro-common
  library for logging, version comparison, and system utilities.
 Filename: pool/brothaman-scripts_1.0.0_all.deb
-Size: 6016
-MD5sum: 91dfd5faddd1fa03797aca2c1d1629c2
-SHA1: 245dc03cae523c1e8a7401dc408a69283797ef79
-SHA256: 2b1800cb8b8aa4fae4c5351547712f78db98458e155c7f77c09ea82d7608d6be
+Size: 6024
+MD5sum: d67e895d41098774f4bc75c37d56f160
+SHA1: 7fd53b12a0ba4c483e93398880eab6e25af5efb6
+SHA256: 74e3d0531ee3027602c6df3ee1a6e432e527dad6a8c74116e6432650c8d07891
 

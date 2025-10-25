@@ -6,54 +6,54 @@ Label: Brothaman APT Repository
 Suite: stable
 Version: 1.0
 Codename: stable
-Date: Sat, 25 Oct 2025 09:58:48 +0000
+Date: Sat, 25 Oct 2025 10:55:58 +0000
 Architectures: amd64 arm64 all
 Components: main
 Description: APT repository for Brothaman hosted on GitHub Pages
 MD5Sum:
- 335e5a73a2e643c8fc434332cc25ddb1     972 main/binary-amd64/Packages.gz
- 028059afb9008588734abd987a082011    1031 main/binary-amd64/Packages.bz2
- 3c83b58e86e7c87e5cbbcd37cc1b1cc3    1892 main/binary-amd64/Packages
- 2cb58f00120e18ad119256e62bbb87ba     647 main/binary-all/Packages.gz
- 0bf8164e6084a74fe9413ab18dab4e45     691 main/binary-all/Packages.bz2
- a765c7dbc9a9d1541e963468c9513a23    1113 main/binary-all/Packages
- 3513ec3aa50d4e89dfb291b6c8a405bc      29 main/binary-arm64/Packages.gz
+ dafaa99a494e63291977c9ec2108d60f     991 main/binary-amd64/Packages.gz
+ 050139b70e908c282a9b050ac78765b0    1048 main/binary-amd64/Packages.bz2
+ 94c130fffaf67f9bafa6f3ca7024d70e    1905 main/binary-amd64/Packages
+ 9cd5e647752cc952b3107df89ee78fcf     652 main/binary-all/Packages.gz
+ be9624d06c74a3a1948e37e72e6abd10     696 main/binary-all/Packages.bz2
+ 5243fb06a3012d5718436a2378a218b1    1126 main/binary-all/Packages
+ 32583c5fb7430970e68c3f77eb4616eb      29 main/binary-arm64/Packages.gz
  4059d198768f9f8dc9372dc1c54bc3c3      14 main/binary-arm64/Packages.bz2
  d41d8cd98f00b204e9800998ecf8427e       0 main/binary-arm64/Packages
 SHA1:
- 03670b5864750afb96b1fcb5fe7955431b4628f9     972 main/binary-amd64/Packages.gz
- 949790adbdd987d3e0bb4002919721aeeead96b7    1031 main/binary-amd64/Packages.bz2
- 90977e4f9e992bcafb13877cc9bca9ad1eaa7a12    1892 main/binary-amd64/Packages
- c1e01208eaf6184cb997cb366dc9053d275a317c     647 main/binary-all/Packages.gz
- 09c706202cf5e2f28ce079a3508a27f9148137ff     691 main/binary-all/Packages.bz2
- e4d06363b36dbffa34b8d28396c883023eb05579    1113 main/binary-all/Packages
- 9c661aac25347cb9a56b80dcecc827d30065daa3      29 main/binary-arm64/Packages.gz
+ bff77f2f5adac4f5528721f1b9d97c33d3848f1e     991 main/binary-amd64/Packages.gz
+ 619972c8f8d28a7983ced038df294c178462df1f    1048 main/binary-amd64/Packages.bz2
+ 59605ddc6a557eefdcc722d0541c976d7676270a    1905 main/binary-amd64/Packages
+ 512fb41e5543a452e58ba3346ae0ecbeec05f1f8     652 main/binary-all/Packages.gz
+ 013b09df7e4fd82b582bd705e73293ae36a654ba     696 main/binary-all/Packages.bz2
+ db89cd1193eeb38202c670485d491803b9065a63    1126 main/binary-all/Packages
+ af434f7098e9c2f6f1342af2274998f4c0f3e4f4      29 main/binary-arm64/Packages.gz
  64a543afbb5f4bf728636bdcbbe7a2ed0804adc2      14 main/binary-arm64/Packages.bz2
  da39a3ee5e6b4b0d3255bfef95601890afd80709       0 main/binary-arm64/Packages
 SHA256:
- 3f500faacf956d11bdcf3cd1856d9b7620d616605544d2242b4cbb5ff5724a6b     972 main/binary-amd64/Packages.gz
- fdb4938c620130481b1bad57ace9eb525c8c9f26de932811b7881329fcd38532    1031 main/binary-amd64/Packages.bz2
- 10622c999f7347594b9bb6b68f7afce053c03aa274efeda882519c2e0b0704a1    1892 main/binary-amd64/Packages
- bced70bd26a4e2f9d8018e3a6db5386f4a6b87524bfea8a15a89bf79b223c9f1     647 main/binary-all/Packages.gz
- 60a3723f19c032a7adf3dd2c4bf874d07ce078fd32d89f7ca43cde54f02b257f     691 main/binary-all/Packages.bz2
- e50d0bdae5a4b6325e5b868e175646405fc0805dbc7c0b15c6a73dede97e2bb4    1113 main/binary-all/Packages
- e4f235227aa28085458934d2bb5066a93a5050c5237fbdec6bd7fc3dc19d60a9      29 main/binary-arm64/Packages.gz
+ 10685ee8890ae0749c1abc4a65c59753f602a9959bea4d3289e3ecc6aeb0d007     991 main/binary-amd64/Packages.gz
+ 9f786db754bb349508bb1a447de4a73ea49ff25ef916369ada44b0a0e0f838a0    1048 main/binary-amd64/Packages.bz2
+ 8e9c3212e63833106ecc4923babef39a40b240a211da979d3b18626c7bae6d11    1905 main/binary-amd64/Packages
+ f20f8d9d4816dda01139c35b0cc6b6ef39cc8f87baad794b939cff0ab42e19e7     652 main/binary-all/Packages.gz
+ d7e2ab88fe72c461da79e2e48c45b23670d810de0bdda919a2e9fd148f4249c3     696 main/binary-all/Packages.bz2
+ b01b3aa01015b0440b6473a0fba951c081545dc89a8f2b3da434b9ad198b727a    1126 main/binary-all/Packages
+ 72707250b9bc7e6f5eff512ef0da986ca676e223b6319f880de87cb4dfb56e2d      29 main/binary-arm64/Packages.gz
  d3dda84eb03b9738d118eb2be78e246106900493c0ae07819ad60815134a8058      14 main/binary-arm64/Packages.bz2
  e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855       0 main/binary-arm64/Packages
 
 -----BEGIN PGP SIGNATURE-----
 
-iQIzBAEBCAAdFiEEtpeHJeDXXEbjLS+uGNMzDP7o+mEFAmj8n4YACgkQGNMzDP7o
-+mFnhg//T8OSjfFw3swKTAiXTY8L9DtdTID0kxb8Rg7LGosnzw5485LeF95XW6iV
-zBmePKnA9r3w2wsESkqPB6Omt8eKvZbf6Hlz1tLifRJeqmsWP8k8VcjfJEoDWe2h
-o0ThkexfG0GauGw9m3CYNa0vu/j9tCSsABvpWrr1hozIohUrnDDlo31iDqZZ4et8
-Hid6HOA2j7oSIwOFzHWrV0+BKvPcfLMEp8E8KgzP45lQ9m3TxPknz09p8mpa1+Dv
-YctZoVfykd9RIRJH1qrIfrS9REpkBdl4FmBZ33oAE6OT3DSy+zT7aQwSfMjOeYoG
-PDxf1fWOqu/OY044Dzw+s/dwQ6bigm7OlgvRhIY+fYHWODet9UMz+qgdrcmMbQe6
-yfDwLtWrDdfpH2OQzMfUmAyz/ozPBfoH1mtWBWIiruDBQhmwafBFmZ0kfyd7ZQdm
-DnRnezwqJIx578bLuaulhsd0Hpop0B4c1R4XFBx7ITzi65ylNwbagQBxJwvw9Xo8
-K1SHjtqGNqHsfpdHgnJstAPV55zWcCzronP5VjodQNKfbrPwv7lZynZgwbzghkJx
-TqGlsps5uQw0MPJv7RQHs7dI3rbKdTTLUjxJqOwD7U2Mc4G5KEPHhxOxk/uBycFB
-/TV/QEll0R/0XThTrRW3S7tsR42Bo27nRv1Aph1HDCgrb9XM9Tg=
-=diNs
+iQIzBAEBCAAdFiEEtpeHJeDXXEbjLS+uGNMzDP7o+mEFAmj8rOwACgkQGNMzDP7o
++mHjfg//WvKB9uw1m/Y0lsky7aJE2Yc/uCEl/TDW/sDwrLCTvIrbHMd/1ZqffASM
+OPhzNJhGiWX1s2vE3M9WX9S2xb6xhxvOZPTtLrCz8sQGFXyZF9o50KpJfy96X+X1
+3IY75zWHOqS522Bt1SiJUnBxeCZ+imiMZzxBIOc68YDsTWBOrvSTWU/RNsbJjAvB
+tG/806hzklY+TG5zDZBXx39rtjMpwA41fLE0lAsoGD+7YTYnWEYESNbDZd7QGXmT
+wLG+GEQeUClPRjDRun2CMHQ7RMszsGj0+xVhPf4/ol9590OBFdjdQin8LtDCIlSP
+B7WuYTtNrV0pthAKTnulYleVXUc9xuomSnxrRLZgkZFCuJfpipaV04/K7AgOUkdj
+j+peSSFNUryGdhTkTtBqMPgSxT1yGICIlVrSIKUN+nreTaBTHJmsllrOzJZXJBF0
+jsW0hcd0RhIkrQdhNb295Q9AWnci9XtZAkjXgBre7EKb1A8m+lFCoGmIQYoNyU1J
+IEyFy42G6x+pD37YKkgFHhu5hpwkhHqgNQ56Gimhqavabm7397uJjjzS2d2rNDex
+obkct0lSnZWHgPomBk9vcsOJ3TM9v95NMmWQMeADv97l/bquLQb0B4AaY3HJguPC
+j3f8ue/1Dwcgq6BFSHUeytht26TENl/JcFcIi+6hSZTvJtVfCcM=
+=ITwG
 -----END PGP SIGNATURE-----
