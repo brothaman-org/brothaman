@@ -21,8 +21,8 @@ Description: Brothaman shell script collection and shared library
  All scripts follow consistent conventions and use the shared bro-common
  library for logging, version comparison, and system utilities.
 Filename: pool/brothaman-scripts_1.0.0_all.deb
-Size: 9384
-MD5sum: 1e9bf03d40a74a7d749718935b37cd26
-SHA1: 4059d7266b2aa2d4b23bba91e22cc19af779a6d7
-SHA256: afb22d8f99031292d5b5d9d1e557626c465cea9bc408ec0e645744dbb380c020
+Size: 9392
+MD5sum: 25a85e837c8d4a3151222e1e810ad883
+SHA1: 4e8134f9a70ca79b5a4cafcac17fcb7ba52c4057
+SHA256: c1399f60c01c170ea748ffde2ebfd5fa73576fbc6e209100af4b5393cb2e7458
 
