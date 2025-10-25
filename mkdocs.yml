@@ -39,5 +39,5 @@ nav:
           - Pod Management: labs/7. pod.md
           - Proxy Testing: labs/proxyd-testing.md
   - Diagrams:
-      - System Architecture: diagrams/architecture.mmd
-      - Service Pattern: diagrams/per-service-pattern.mmd
+      - System Architecture: diagrams/architecture.md
+      - Service Pattern: diagrams/per-service-pattern.md
