@@ -140,9 +140,9 @@ next_subid_range() {
 create_zfs_dataset() {
   local dataset="$1"
   bro_info "Creating ZFS dataset: $dataset"
-  run "zfs create -o mountpoint='$USERNAME_HOME' \
+  run zfs create -o "mountpoint=$USERNAME_HOME" \
          -o xattr=sa -o acltype=posixacl -o aclinherit=passthrough -o aclmode=passthrough \
-         -o compression=zstd -o atime=off -o recordsize=128K '$dataset'"
+         -o compression=zstd -o atime=off -o recordsize=128K "$dataset"
 }
 
 # Setup subuid/subgid ranges
@@ -156,14 +156,14 @@ setup_subid_ranges() {
     local subuid_start
     subuid_start=$(next_subid_range "$SUBUID_FILE")
     bro_info "Adding subuid range: $USERNAME:$subuid_start:$RANGE_SIZE"
-    run "echo '$USERNAME:$subuid_start:$RANGE_SIZE' >> '$SUBUID_FILE'"
+    run bash -c "echo '$USERNAME:$subuid_start:$RANGE_SIZE' >> '$SUBUID_FILE'"
   fi
   
   if ! grep -q "^$USERNAME:" "$SUBGID_FILE"; then
     local subgid_start
     subgid_start=$(next_subid_range "$SUBGID_FILE")
     bro_info "Adding subgid range: $USERNAME:$subgid_start:$RANGE_SIZE"
-    run "echo '$USERNAME:$subgid_start:$RANGE_SIZE' >> '$SUBGID_FILE'"
+    run bash -c "echo '$USERNAME:$subgid_start:$RANGE_SIZE' >> '$SUBGID_FILE'"
   fi
 }
 
@@ -174,40 +174,51 @@ setup_container_configs() {
   gid=$(id -g "$USERNAME")
   
   bro_info "Creating container configuration directories"
-  run "mkdir -p '$CONTAINERS_CFG_DIR' '$CONTAINERS_DATA_DIR'"
-  run "chown '$uid:$gid' '$CONTAINERS_CFG_DIR' '$CONTAINERS_DATA_DIR'"
+  run mkdir -p "$CONTAINERS_CFG_DIR" "$CONTAINERS_DATA_DIR"
+  
+  # Ensure all parent directories have correct ownership
+  run chown "$uid:$gid" "$XDG_CONFIG_HOME" "$XDG_DATA_HOME"
+  run chown "$uid:$gid" "$CONTAINERS_CFG_DIR" "$CONTAINERS_DATA_DIR"
   
   # Create storage.conf
   bro_info "Creating storage.conf with overlay + fuse-overlayfs"
-  run "cat > '$STORAGE_CONF' << 'EOF'
+  if (( DRYRUN )); then
+    bro_info "DRY-RUN: Creating $STORAGE_CONF"
+  else
+    cat > "$STORAGE_CONF" << EOF
 [storage]
-driver = \"overlay\"
-graphroot = \"$GRAPHROOT\"
-runroot = \"/run/user/$uid/containers\"
+driver = "overlay"
+graphroot = "$GRAPHROOT"
+runroot = "/run/user/$uid/containers"
 
 [storage.options]
 additionalimagestores = []
-pull_options = {enable_partial_images = \"false\", use_hard_links = \"false\", ostree_repos=\"\"}
+pull_options = {enable_partial_images = "false", use_hard_links = "false", ostree_repos=""}
 
 [storage.options.overlay]
-mountopt = \"nodev\"
-mount_program = \"/usr/bin/fuse-overlayfs\"
-EOF"
+mountopt = "nodev"
+mount_program = "/usr/bin/fuse-overlayfs"
+EOF
+  fi
   
   # Create containers.conf
   bro_info "Creating containers.conf with pasta networking"
-  run "cat > '$CONTAINERS_CONF' << 'EOF'
+  if (( DRYRUN )); then
+    bro_info "DRY-RUN: Creating $CONTAINERS_CONF"
+  else
+    cat > "$CONTAINERS_CONF" << EOF
 [engine]
-cgroup_manager = \"cgroupfs\"
-events_logger = \"file\"
-log_level = \"error\"
+cgroup_manager = "cgroupfs"
+events_logger = "file"
+log_level = "error"
 
 [network]
-default_rootless_network_cmd = \"pasta\"
-pasta_options = [\"-m\", \"1500\"]
-EOF"
+default_rootless_network_cmd = "pasta"
+pasta_options = ["-m", "1500"]
+EOF
+  fi
   
-  run "chown '$uid:$gid' '$STORAGE_CONF' '$CONTAINERS_CONF'"
+  run chown "$uid:$gid" "$STORAGE_CONF" "$CONTAINERS_CONF"
 }
 
 # Copy skeleton files
@@ -218,15 +229,81 @@ copy_skeleton() {
   
   if [[ -d /etc/skel ]]; then
     bro_info "Copying skeleton files from /etc/skel"
-    run "cp -r /etc/skel/. '$USERNAME_HOME/'"
-    run "chown -R '$uid:$gid' '$USERNAME_HOME'"
+    run cp -r /etc/skel/. "$USERNAME_HOME/"
+    run chown -R "$uid:$gid" "$USERNAME_HOME"
   fi
 }
 
 # Enable systemd lingering
 enable_lingering() {
   bro_info "Enabling systemd lingering for $USERNAME"
-  run "loginctl enable-linger '$USERNAME'"
+  run loginctl enable-linger "$USERNAME"
+}
+
+# Check for required commands
+check_dependencies() {
+  local missing=()
+  
+  for cmd in useradd userdel loginctl; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+      missing+=("$cmd")
+    fi
+  done
+  
+  if (( ${#missing[@]} > 0 )); then
+    bro_error "Missing required commands: ${missing[*]}"
+    bro_info "Please install required packages:"
+    bro_info "  Debian/Ubuntu: sudo apt install passwd systemd"
+    exit 1
+  fi
+}
+
+# Check Podman version and install if needed
+check_podman() {
+  local min_version="4.0.0"
+  
+  if ! command -v podman >/dev/null 2>&1; then
+    bro_warn "Podman not found - installing via bro-install-podman"
+    if command -v bro-install-podman >/dev/null 2>&1; then
+      run bro-install-podman
+    else
+      bro_error "bro-install-podman command not found"
+      bro_info "Please install brothaman-scripts package or run bro-install-podman manually"
+      exit 1
+    fi
+    return 0
+  fi
+  
+  # Get current version
+  local current_version
+  current_version=$(podman --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+  
+  if [[ -z "$current_version" ]]; then
+    bro_warn "Cannot determine Podman version - reinstalling via bro-install-podman"
+    if command -v bro-install-podman >/dev/null 2>&1; then
+      run bro-install-podman
+    else
+      bro_error "bro-install-podman command not found"
+      exit 1
+    fi
+    return 0
+  fi
+  
+  # Compare versions using bro_version_compare from bro-common
+  local version_cmp
+  version_cmp=$(bro_version_compare "$current_version" "$min_version")
+  
+  if (( version_cmp >= 0 )); then
+    bro_info "Podman $current_version is suitable (>= $min_version)"
+  else
+    bro_warn "Podman $current_version is too old (need >= $min_version) - upgrading via bro-install-podman"
+    if command -v bro-install-podman >/dev/null 2>&1; then
+      run bro-install-podman
+    else
+      bro_error "bro-install-podman command not found"
+      exit 1
+    fi
+  fi
 }
 
 # Create user
@@ -240,10 +317,10 @@ create_user() {
   if (( SYSTEM_USER )); then
     shell_bin="/usr/sbin/nologin"
     bro_info "Creating system user $USERNAME with nologin shell"
-    run "useradd --system --home-dir '$USERNAME_HOME' --create-home --shell '$shell_bin' '$USERNAME'"
+    run useradd --system --home-dir "$USERNAME_HOME" --create-home --shell "$shell_bin" "$USERNAME"
   else
     bro_info "Creating regular user $USERNAME"
-    run "useradd --home-dir '$USERNAME_HOME' --create-home --shell '$shell_bin' '$USERNAME'"
+    run useradd --home-dir "$USERNAME_HOME" --create-home --shell "$shell_bin" "$USERNAME"
   fi
 }
 
@@ -254,24 +331,24 @@ remove_user() {
   # Stop user processes
   if id "$USERNAME" &>/dev/null; then
     bro_info "Stopping all processes for user $USERNAME"
-    run "pkill -u '$USERNAME' || true"
-    run "sleep 2"
-    run "pkill -9 -u '$USERNAME' || true"
+    run bash -c "pkill -u '$USERNAME' || true"
+    run sleep 2
+    run bash -c "pkill -9 -u '$USERNAME' || true"
   fi
   
   # Disable lingering
   bro_info "Disabling systemd lingering"
-  run "loginctl disable-linger '$USERNAME' || true"
+  run bash -c "loginctl disable-linger '$USERNAME' || true"
   
   # Remove from subuid/subgid
   if [[ -f "$SUBUID_FILE" ]]; then
     bro_info "Removing subuid entries"
-    run "sed -i '/^$USERNAME:/d' '$SUBUID_FILE'"
+    run sed -i "/^$USERNAME:/d" "$SUBUID_FILE"
   fi
   
   if [[ -f "$SUBGID_FILE" ]]; then
     bro_info "Removing subgid entries"
-    run "sed -i '/^$USERNAME:/d' '$SUBGID_FILE'"
+    run sed -i "/^$USERNAME:/d" "$SUBGID_FILE"
   fi
   
   # Handle ZFS dataset
@@ -286,26 +363,34 @@ remove_user() {
     
     if [[ -n "$dataset" ]] && zfs_dataset_exists "$dataset"; then
       bro_info "Destroying ZFS dataset: $dataset"
-      run "zfs destroy '$dataset'"
+      run zfs destroy "$dataset"
     fi
   fi
   
   # Remove user account
   if id "$USERNAME" &>/dev/null; then
     bro_info "Deleting user account"
-    run "userdel '$USERNAME'"
+    run userdel "$USERNAME"
   fi
   
   # Clean up home directory if it still exists
   if [[ -d "$USERNAME_HOME" ]]; then
     bro_info "Removing home directory: $USERNAME_HOME"
-    run "rm -rf '$USERNAME_HOME'"
+    run rm -rf "$USERNAME_HOME"
   fi
 }
 
 # Main execution
 main() {
   bro_info "bro-user: $(if (( DO_REMOVE )); then echo "Removing"; else echo "Creating/updating"; fi) user $USERNAME"
+  
+  # Check dependencies first
+  check_dependencies
+  
+  # For user creation, ensure Podman is properly installed
+  if (( ! DO_REMOVE )); then
+    check_podman
+  fi
   
   if (( DO_REMOVE )); then
     remove_user

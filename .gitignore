@@ -1,3 +1,4 @@
 .vagrant
 debs
 old-bro
+.ssh-config

@@ -16,9 +16,9 @@ sudo apt install <package-name>
 ```
 
 ## Release Information
-- **Version**: v1.0.4
-- **Commit**: 705668d
-- **Released**: Sat, 25 Oct 2025 12:14:11 +0000
+- **Version**: v1.0.5
+- **Commit**: 601425f
+- **Released**: Sat, 25 Oct 2025 12:34:24 +0000
 - **Packages**: 2
 
 ## GitHub Pages Configuration
