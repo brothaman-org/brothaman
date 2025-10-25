@@ -135,7 +135,7 @@ Vagrant.configure("2") do |config|
             virsh vol-delete --pool default "${disk}" || true
             echo "💥 Deleted extra disk file: ${disk_path}"
           fi
-        done < <(virsh vol-list --pool default | grep 'zfs-helper_default')
+        done < <(virsh vol-list --pool default | grep 'brothaman_default')
       '
       RUBY_BASH
     }
