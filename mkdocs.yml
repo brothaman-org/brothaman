@@ -25,15 +25,19 @@ nav:
   - Compose Conversion: compose-conversion.md
   - Dictionary: dictionary.md
   - Labs:
-      - Setup: labs/0. setup.md
-      - Lingering: labs/1. lingering.md
-      - Quadlet: labs/2. quadlet.md
-      - Volumes: labs/3. volumes.md
-      - Debugging: labs/4. debugging.md
-      - Networking: labs/5. networking.md
-      - PgAdmin: labs/6. pgadmin.md
-      - Pod Management: labs/7. pod.md
-      - Proxy Testing: labs/proxyd-testing.md
+      - labs/index.md
+      - Foundation:
+          - Setup Environment: labs/0. setup.md
+          - User Lingering: labs/1. lingering.md
+          - Quadlet Basics: labs/2. quadlet.md
+      - Storage & Data:
+          - Volumes & ZFS: labs/3. volumes.md
+          - Debugging: labs/4. debugging.md
+      - Networking & Services:
+          - Network Configuration: labs/5. networking.md
+          - Database Admin: labs/6. pgadmin.md
+          - Pod Management: labs/7. pod.md
+          - Proxy Testing: labs/proxyd-testing.md
   - Diagrams:
       - System Architecture: diagrams/architecture.mmd
       - Service Pattern: diagrams/per-service-pattern.mmd

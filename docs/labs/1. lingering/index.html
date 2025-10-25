@@ -20,7 +20,7 @@
     
     
       
-        <title>Lingering - Brothaman</title>
+        <title>User Lingering - Brothaman</title>
       
     
     
@@ -98,7 +98,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Lingering
+              User Lingering
             
           </span>
         </div>
@@ -653,12 +653,77 @@
   
   
     <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Brothaman Labs
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_11_2" id="__nav_11_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Foundation
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_11_2">
+            <span class="md-nav__icon md-icon"></span>
+            Foundation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../0.%20setup/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Setup
+    Setup Environment
     
   </span>
   
@@ -690,7 +755,7 @@
   
   
   <span class="md-ellipsis">
-    Lingering
+    User Lingering
     
   </span>
   
@@ -703,7 +768,7 @@
   
   
   <span class="md-ellipsis">
-    Lingering
+    User Lingering
     
   </span>
   
@@ -917,7 +982,7 @@
   
   
   <span class="md-ellipsis">
-    Quadlet
+    Quadlet Basics
     
   </span>
   
@@ -927,6 +992,54 @@
   
 
               
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_3" id="__nav_11_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Storage & Data
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_3">
+            <span class="md-nav__icon md-icon"></span>
+            Storage & Data
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
             
               
                 
@@ -940,7 +1053,7 @@
   
   
   <span class="md-ellipsis">
-    Volumes
+    Volumes & ZFS
     
   </span>
   
@@ -974,6 +1087,54 @@
 
               
             
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_4" id="__nav_11_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Networking & Services
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_4">
+            <span class="md-nav__icon md-icon"></span>
+            Networking & Services
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
               
                 
   
@@ -986,7 +1147,7 @@
   
   
   <span class="md-ellipsis">
-    Networking
+    Network Configuration
     
   </span>
   
@@ -1009,7 +1170,7 @@
   
   
   <span class="md-ellipsis">
-    PgAdmin
+    Database Admin
     
   </span>
   
@@ -1061,6 +1222,14 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1383,7 +1552,7 @@
 
 
 <h1 id="lingering">Lingering</h1>
-<p>In this lab we will prove that <strong>systemd lingering</strong> works when enabled for an unprivileged user and demonstrate its impact on <strong>user-scoped services</strong> that persist across reboots.</p>
+<p>In this lab we will prove that <strong>systemd lingering</strong> works when enabled for an unprivileged user and demonstrate its impact on <strong>user-scoped services</strong> that persist across reboots. You will:</p>
 <ol>
 <li>Create an unprivileged lingering user and enable systemd commands</li>
 <li>Create, install, and start test systemd user-scoped service</li>
@@ -1397,9 +1566,9 @@
 <h2 id="0-snapshot">0. Snapshot</h2>
 <p>Since this test runs inside a Vagrant VM, capture a baseline snapshot before making any changes. From your host machine (in the same directory as your Vagrantfile):</p>
 <pre><code class="language-shell">if ! vagrant snapshot list 2&gt;&amp;1 | grep before-starting &gt;/dev/null; then
-  vagrant snapshot save before-starting;
+    vagrant snapshot save before-starting;
 else
-  echo before-starting snapshot already exists;
+    echo before-starting snapshot already exists;
 fi
 </code></pre>
 <p>This allows you to roll the VM back to its exact pre-test state later.</p>
@@ -1585,7 +1754,7 @@ echo
 </code></pre>
 <p>Reboot and check again, the service should still be up so long as we do not turn off user lingering.</p>
 <h2 id="8-lessons-learned">8. Lessons learned</h2>
-<p>Through this lab we verified how <strong>systemd’s user-scoped manager</strong> behaves under different conditions and why <strong>lingering</strong> is such an important feature for background or headless service users.</p>
+<p>Through this lab we verified how <strong>systemd's user-scoped manager</strong> behaves under different conditions and why <strong>lingering</strong> is such an important feature for background or headless service users.</p>
 <h3 id="key-takeaways">Key takeaways</h3>
 <ol>
 <li>

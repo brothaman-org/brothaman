@@ -659,12 +659,75 @@
   
   
     <li class="md-nav__item">
+      <a href="labs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Brothaman Labs
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_2" id="__nav_11_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Foundation
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_2">
+            <span class="md-nav__icon md-icon"></span>
+            Foundation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="labs/0.%20setup/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Setup
+    Setup Environment
     
   </span>
   
@@ -687,7 +750,7 @@
   
   
   <span class="md-ellipsis">
-    Lingering
+    User Lingering
     
   </span>
   
@@ -710,7 +773,7 @@
   
   
   <span class="md-ellipsis">
-    Quadlet
+    Quadlet Basics
     
   </span>
   
@@ -720,6 +783,54 @@
   
 
               
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_3" id="__nav_11_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Storage & Data
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_3">
+            <span class="md-nav__icon md-icon"></span>
+            Storage & Data
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
             
               
                 
@@ -733,7 +844,7 @@
   
   
   <span class="md-ellipsis">
-    Volumes
+    Volumes & ZFS
     
   </span>
   
@@ -767,6 +878,54 @@
 
               
             
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_11_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_11_4" id="__nav_11_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Networking & Services
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_11_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_11_4">
+            <span class="md-nav__icon md-icon"></span>
+            Networking & Services
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
               
                 
   
@@ -779,7 +938,7 @@
   
   
   <span class="md-ellipsis">
-    Networking
+    Network Configuration
     
   </span>
   
@@ -802,7 +961,7 @@
   
   
   <span class="md-ellipsis">
-    PgAdmin
+    Database Admin
     
   </span>
   
@@ -854,6 +1013,14 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -997,18 +1164,17 @@
 
 
 <h1 id="brothaman-overview">Brothaman Overview</h1>
-<p><strong>Brothaman</strong> splits a previously monolithic rootless-Podman setup into small, composable units:</p>
 <ul>
-<li><code>bro-install-zfs</code> — install ZFS (no pools are created).</li>
-<li><code>bro-test-zpool</code> — create a disposable, file-backed test zpool (Vagrant/dev).</li>
-<li><code>bro-install-deps</code> — install Podman, Quadlet, socket proxy, and helpers.</li>
-<li><code>bro-user</code> — create/remove rootless users (lingering, subuid/gid, per-user storage).</li>
-<li><code>bro-service</code> — create socket-activated services (Quadlet + systemd-socket-proxyd).</li>
-<li><code>bro-compose</code> — convert docker-compose.yml into <code>bro-service</code> calls (no <code>-p</code> publishes).</li>
-<li><code>bro-doctor</code> — optional diagnostics.</li>
+<li>[ ] <code>bro-volume</code> — create/remove/manage rootless Podman volumes (ZFS-optional).</li>
+<li>[ ] <code>bro-network</code> — create/remove/manage rootless Podman networks (CNI + systemd-networkd).</li>
+<li>[v] <code>bro-user</code> — create/remove rootless users (lingering, subuid/gid, per-user storage).</li>
+<li>[ ] <code>bro-service</code> — create socket-activated services (Quadlet + systemd-socket-proxyd).</li>
+<li>[ ] <code>bro-compose</code> — convert docker-compose.yml into <code>bro-service</code> calls (no <code>-p</code> publishes).</li>
+<li>[ ] <code>bro-doctor</code> — optional diagnostics.</li>
+<li>[ ] <code>bro-install-podman</code> — installs or upgrades podman to latest from Alvistack.</li>
 </ul>
 <p><strong>Principles</strong>: small scripts, idempotency, rootless-first, ZFS-optional, socket-activated composition,
-cross-user/host by <em>using</em> services instead of orchestrating them.</p>
+cross-user/host by on demand <em>using</em> sockets instead of orchestrating services.</p>
 
 
 
