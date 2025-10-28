@@ -85,21 +85,17 @@ Vagrant.configure("2") do |config|
 
   SHELL
 
-  # config.vm.synced_folder ".", "/brothaman",
-  #   type: "rsync",
-  #   create: true,
-  #   # owner: 1001,
-  #   # group: 1001,
-  #   rsync__chown: true,
-  #   rsync__auto: false,
-  #   rsync__args: [
-  #     "--verbose",
-  #     "--archive",
-  #   ],
-  #   rsync__exclude: [
-  #     ".git",
-  #     ".vagrant"
-  #   ]
+  config.vm.synced_folder "docs", "/brothaman",
+    type: "rsync",
+    create: true,
+    owner: 1001,
+    group: 1001,
+    rsync__chown: true,
+    rsync__auto: false,
+    rsync__args: [
+      "--verbose",
+      "--archive",
+    ]
 
   config.vm.provider :libvirt do |libvirt|
     libvirt.memory = 4096
