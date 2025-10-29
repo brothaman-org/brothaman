@@ -36,6 +36,7 @@
     "psql",
     "pushd",
     "Quadlet",
+    "quadlets",
     "raidz",
     "sandboxing",
     "setns",
