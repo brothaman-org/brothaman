@@ -856,7 +856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../4.%20debugging/" class="md-nav__link">
+      <a href="../5.%20debugging/" class="md-nav__link">
         
   
   
@@ -929,7 +929,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../5.%20networking/" class="md-nav__link">
+      <a href="../4.%20networking/" class="md-nav__link">
         
   
   
@@ -1007,19 +1007,6 @@
         
       
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Proxy Testing
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -1031,67 +1018,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1-set-up-the-container" class="md-nav__link">
-    <span class="md-ellipsis">
-      1. Set up the container
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-create-user-systemd-units-socket-service" class="md-nav__link">
-    <span class="md-ellipsis">
-      2 Create user systemd units (socket + service)
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2 Create user systemd units (socket + service)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#21-the-socket-unit" class="md-nav__link">
-    <span class="md-ellipsis">
-      2.1 The socket unit
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#22-the-service-unit" class="md-nav__link">
-    <span class="md-ellipsis">
-      2.2 The service unit
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
       
     </li>
   
@@ -1229,56 +1155,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1-set-up-the-container" class="md-nav__link">
-    <span class="md-ellipsis">
-      1. Set up the container
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-create-user-systemd-units-socket-service" class="md-nav__link">
-    <span class="md-ellipsis">
-      2 Create user systemd units (socket + service)
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2 Create user systemd units (socket + service)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#21-the-socket-unit" class="md-nav__link">
-    <span class="md-ellipsis">
-      2.1 The socket unit
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#22-the-service-unit" class="md-nav__link">
-    <span class="md-ellipsis">
-      2.2 The service unit
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -1337,85 +1213,6 @@ Backlog=128
 [Install]
 WantedBy=default.target
 </code></pre>
-<h2 id="1-set-up-the-container">1. Set up the container</h2>
-<pre><code class="language-bash">sudo su - lingeruser
-</code></pre>
-<p>Fire up nginx to listen on default port 80 inside the non-networked container on the localhost / loopback and confirm it is working.</p>
-<pre><code class="language-bash">podman rm -f nginx-proxyd 2&gt;/dev/null || true
-podman run -d --name nginx-proxyd --network=none --restart=no docker.io/library/nginx:alpine 
-podman exec nginx-proxyd netstat -tlnp | grep &quot;:80&quot;
-podman exec nginx-proxyd curl localhost
-</code></pre>
-<p>Capture the netns path for the container process</p>
-<pre><code class="language-bash">NETNS_PATH=&quot;$(podman inspect -f '{{ .NetworkSettings.SandboxKey }}' nginx-proxyd)&quot;
-echo &quot;NETNS_PATH=${NETNS_PATH}&quot;
-# Example: 
-#   for pasta /run/user/1001/netns/netns-0f518fa4-fc9a-b4e3-5f0c-cd7286004f80
-#   for others /proc/20173/ns/net
-
-# Confirm it’s a file we (the same user) can open
-ls -l &quot;${NETNS_PATH}&quot;
-</code></pre>
-<h2 id="2-create-user-systemd-units-socket-service">2 Create <strong>user</strong> systemd units (socket + service)</h2>
-<p>We'll bind <strong>host:8080</strong> in a <strong>user</strong> socket unit (no root needed since &gt;1024), and on first connection systemd will spawn <code>systemd-socket-proxyd</code> <strong>inside the container’s netns</strong>, dialing <code>127.0.0.1:80</code>.</p>
-<h3 id="21-the-socket-unit">2.1 The socket unit</h3>
-<pre><code class="language-bash">mkdir -p ~/.config/systemd/user
-cat &gt; ~/.config/systemd/user/nginx8080.socket &lt;&lt;'EOF'
-[Unit]
-Description=Socket for nginx in container netns (host:8080)
-
-[Socket]
-# Listen on all interfaces; adjust as needed (0.0.0.0 or 127.0.0.1)
-ListenStream=0.0.0.0:8080
-NoDelay=true
-ReusePort=true
-Backlog=128
-
-[Install]
-WantedBy=default.target
-EOF
-</code></pre>
-<h2 id="22-the-service-unit">2.2 The service unit</h2>
-<p>Paste the <strong>exact</strong> netns path you captured into <code>NetworkNamespacePath=...</code> below.</p>
-<pre><code class="language-bash">cat &gt; ~/.config/systemd/user/nginx8080.service &lt;&lt;EOF
-[Unit]
-Description=Proxy host:8080 -&gt; 127.0.0.1:80 inside nginx-proxyd netns
-
-# Make sure container exists before we try to connect (best-effort)
-After=default.target
-
-[Service]
-# CRITICAL: join the container's network namespace so 127.0.0.1 is *inside* the container
-NetworkNamespacePath=/run/user/1001/netns/netns-0f518fa4-fc9a-b4e3-5f0c-cd7286004f80
-
-# Socket-activated; systemd passes the accepted client socket(s) via LISTEN_FDS
-ExecStart=/usr/lib/systemd/systemd-socket-proxyd 127.0.0.1:80
-
-# Reasonable hardening/defaults for a tiny proxy hop
-DynamicUser=no
-ProtectSystem=strict
-ProtectHome=yes
-PrivateTmp=yes
-NoNewPrivileges=true
-LockPersonality=true
-RestrictRealtime=true
-RestrictSUIDSGID=true
-CapabilityBoundingSet=
-SystemCallArchitectures=native
-
-# Restart on occasional failures
-Restart=on-failure
-RestartSec=0.5s
-# Inherit our user's env
-Environment=LANG=C.UTF-8
-
-[Install]
-WantedBy=default.target
-EOF
-</code></pre>
-<blockquote>
-<p><code>NetworkNamespacePath=</code> is the magic: it makes the proxyd’s <strong>client side</strong> (the “dial to 127.0.0.1:80”) happen <strong>inside</strong> the container’s netns.</p>
-</blockquote>
 
 
 
