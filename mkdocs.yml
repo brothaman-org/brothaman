@@ -32,9 +32,9 @@ nav:
           - Quadlet Basics: labs/2. quadlet.md
       - Storage & Data:
           - Volumes & ZFS: labs/3. volumes.md
-          - Debugging: labs/4. debugging.md
+          - Debugging: labs/5. debugging.md
       - Networking & Services:
-          - Network Configuration: labs/5. networking.md
+          - Network Configuration: labs/4. networking.md
           - Database Admin: labs/6. pgadmin.md
           - Pod Management: labs/7. pod.md
           - Proxy Testing: labs/proxyd-testing.md
