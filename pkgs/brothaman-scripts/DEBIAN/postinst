@@ -53,6 +53,8 @@ if command -v zfs >/dev/null 2>&1 && command -v zpool >/dev/null 2>&1; then
 fi
 
 install -d -m 0750 "$BASE_DIR"
+chown root:zfshelper "$BASE_DIR"
+chmod 0750 "$BASE_DIR"
 
 echo "Brothaman scripts installed successfully!"
 echo "Configuration available in: /etc/brothaman/config"
