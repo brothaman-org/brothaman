@@ -56,6 +56,15 @@ install -d -m 0750 "$BASE_DIR"
 chown root:zfshelper "$BASE_DIR"
 chmod 0750 "$BASE_DIR"
 
+# Ensure XDG runtime profile script exists for user sessions
+cat >/etc/profile.d/xdg_runtime.sh <<'EOF'
+#!/bin/sh
+
+export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
+EOF
+chmod 0755 /etc/profile.d/xdg_runtime.sh
+
 echo "Brothaman scripts installed successfully!"
 echo "Configuration available in: /etc/brothaman/config"
 echo "Shared library available at: /usr/local/share/brothaman/bro-common"
