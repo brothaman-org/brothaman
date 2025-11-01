@@ -105,6 +105,42 @@ require_dependencies() {
   fi
 }
 
+ensure_podman() {
+  local min_version="4.0.0"
+  if ! command -v podman >/dev/null 2>&1; then
+    bro_info "Podman not found; installing via bro-install-podman"
+    if command -v bro-install-podman >/dev/null 2>&1; then
+      bro-install-podman
+    else
+      bro_error "bro-install-podman not available to install Podman."
+      exit 1
+    fi
+  fi
+
+  local current_version
+  current_version=$(podman --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+
+  if [[ -z "${current_version}" ]]; then
+    bro_info "Unable to determine Podman version; reinstalling via bro-install-podman"
+    bro-install-podman
+    current_version=$(podman --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+    [[ -n "${current_version}" ]] || { bro_error "Podman installation did not succeed."; exit 1; }
+  fi
+
+  local cmp
+  cmp=$(bro_version_compare "${current_version}" "${min_version}")
+  if (( cmp < 0 )); then
+    bro_info "Podman ${current_version} is older than required ${min_version}; upgrading via bro-install-podman"
+    bro-install-podman
+    current_version=$(podman --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+    cmp=$(bro_version_compare "${current_version}" "${min_version}")
+    if [[ -z "${current_version}" || "${cmp}" -lt 0 ]]; then
+      bro_error "Failed to install a suitable Podman version (>= ${min_version})."
+      exit 1
+    fi
+  fi
+}
+
 require_base_dataset() {
   [[ -d "${USER_HOME_BASE}" ]] || {
     bro_error "Base directory ${USER_HOME_BASE} not found. Ensure brothaman-scripts post-install steps completed successfully."
@@ -311,6 +347,7 @@ remove_user_resources() {
 
 create_user_flow() {
   require_dependencies
+  ensure_podman
   require_base_dataset
   prepare_user_dataset
   create_user_account
