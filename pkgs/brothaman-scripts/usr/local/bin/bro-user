@@ -30,6 +30,7 @@ SUBGID_FILE="/etc/subgid"
 
 SYSTEM_USER=0
 DO_REMOVE=0
+SKIP_HELLO=0
 USERNAME=""
 BASE_DATASET=""
 USER_DATASET=""
@@ -45,7 +46,8 @@ Usage:
 
 Options:
   --system-user   Create the account as a system user with /usr/sbin/nologin
-  --remove        Remove the account and associated resources
+  --remove        Remove the account and all associated resources
+  --no-hello      Skip running the Podman hello container verification
   --help          Show this message
   --version       Display bro-user version information
 EOF
@@ -61,6 +63,7 @@ parse_args() {
     case "$1" in
       --system-user) SYSTEM_USER=1 ;;
       --remove) DO_REMOVE=1 ;;
+      --no-hello) SKIP_HELLO=1 ;;
       --help) usage; exit 0 ;;
       --version) print_version; exit 0 ;;
       --) shift; while (( $# )); do args+=("$1"); shift; done; break ;;
@@ -200,6 +203,18 @@ prepare_user_dataset() {
     -o recordsize=128K \
     "${USER_DATASET}"
   DATASET_CREATED=1
+}
+
+delegate_zfs_mount() {
+  if ! command -v zfs >/dev/null 2>&1; then
+    return
+  fi
+
+  if [[ -n "${USER_DATASET:-}" ]] && zfs_dataset_exists "${USER_DATASET}"; then
+    if ! zfs allow "${USERNAME}" mount "${USER_DATASET}" >/dev/null 2>&1; then
+      bro_warn "Failed to delegate ZFS mount permission on ${USER_DATASET} to ${USERNAME}."
+    fi
+  fi
 }
 
 create_user_account() {
@@ -378,6 +393,19 @@ configure_subids() {
   ensure_subid_ranges "${SUBGID_FILE}"
 }
 
+
+run_hello_check() {
+  if ! command -v podman >/dev/null 2>&1; then
+    bro_warn "Podman not available; skipping hello verification for ${USERNAME}."
+    return
+  fi
+
+  bro_info "Verifying Podman setup for ${USERNAME} via quay.io/podman/hello"
+  if ! sudo -iu "${USERNAME}" podman run --rm quay.io/podman/hello:latest >/dev/null 2>&1; then
+    bro_warn "Podman hello verification failed for ${USERNAME}. Please check manually."
+  fi
+}
+
 remove_user_resources() {
   if ! id "${USERNAME}" >/dev/null 2>&1; then
     bro_error "User '${USERNAME}' does not exist."
@@ -433,6 +461,7 @@ create_user_flow() {
   create_required_directories
   write_containers_conf
   write_storage_conf
+  delegate_zfs_mount
   configure_subids
   enable_lingering
 
@@ -440,6 +469,10 @@ create_user_flow() {
   bro_info "User ${USERNAME} configured for rootless Podman."
   bro_info "Home directory: ${home}"
   bro_info "Containers config: ${home}/.config/containers/containers.conf"
+
+  if (( ! SKIP_HELLO )); then
+    run_hello_check
+  fi
 }
 
 remove_user_flow() {
