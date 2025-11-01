@@ -13,10 +13,10 @@ Description: Network namespace helper utility for brothaman
  like curl, ip, netstat, and systemd-socket-proxyd while maintaining
  security by validating namespace ownership.
 Filename: pool/brothaman-helper_1.0.0_amd64.deb
-Size: 275632
-MD5sum: e7c78692fc2c0cf68e01ca5a54fb8e1c
-SHA1: e79cf6a3fdae928150855395e72c5960d233c5cc
-SHA256: 4b010c3a7a690e0eb60ce1c89b6cd2391f9f740c5e3571a883f8018a2b081461
+Size: 275588
+MD5sum: cf7b3098a45fe9a110c3cfc5a6273898
+SHA1: 056bf9ad9d8d55e05c6f073e87fc8c26ffbf7e95
+SHA256: 0c8648f60f0946aacaadc3daf4f17d710ea20f276ebc4cf264ce588cfcec86c6
 
 Package: brothaman-scripts
 Version: 1.0.0
@@ -41,8 +41,8 @@ Description: Brothaman shell script collection and shared library
  All scripts follow consistent conventions and use the shared bro-common
  library for logging, version comparison, and system utilities.
 Filename: pool/brothaman-scripts_1.0.0_all.deb
-Size: 14500
-MD5sum: 69c7d41aca9cf2629335ff0cb7f1aa61
-SHA1: d021c58aee0882f18bba7c207f905e9585aeffb7
-SHA256: 913564f64ba6e2411aaf6ab6b60b5269e5143e5f96b1d998c1e93b6755a454d1
+Size: 14712
+MD5sum: 169391b346c24a649519aae4ed19c60f
+SHA1: 7b190b68e48b0c3528145c97a13e1bcd5eaa9e54
+SHA256: 6a24e8ac97e7a39fe6d49cb95da65661d16dba608d062da2c31bf9b48eeea639
 

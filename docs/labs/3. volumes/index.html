@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.22">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.23">
     
     
       
@@ -2004,7 +2004,7 @@ psql -h &quot;$(ip route | grep 'kernel scope link' | awk '{print $9}')&quot; -p
 sudo bro-user postgres
 sudo -iu postgres podman run --rm quay.io/podman/hello
 sudo -iu postgres mkdir -p ~/.config/containers/systemd/
-cat | sudo -iu postgres tee ~postgres/.config/containers/systemd/postgresql.container &lt;&lt;'EOF'
+cat &lt;&lt;'EOF' &gt; ~/.config/containers/systemd/postgresql.container
 [Unit]
 Description=PostgreSQL Container
 
@@ -2012,6 +2012,7 @@ Description=PostgreSQL Container
 Image=docker.io/library/postgres:16
 ContainerName=postgresql
 Environment=POSTGRES_PASSWORD=password
+Volume=/var/lib/containers/unprivileged/postgres/volumes/postgresql:/var/lib/postgresql/data
 UserNS=keep-id
 
 [Service]
