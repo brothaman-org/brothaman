@@ -211,7 +211,7 @@ delegate_zfs_mount() {
   fi
 
   if [[ -n "${USER_DATASET:-}" ]] && zfs_dataset_exists "${USER_DATASET}"; then
-    local perms="mount,create,snapshot,rollback"
+    local perms="mount,create,destroy,snapshot,rollback,mountpoint,clone,promote"
     if ! zfs allow "${USERNAME}" "${perms}" "${USER_DATASET}" >/dev/null 2>&1; then
       bro_warn "Failed to delegate ZFS permissions (${perms}) on ${USER_DATASET} to ${USERNAME}."
     fi

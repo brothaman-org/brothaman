@@ -2003,8 +2003,8 @@ psql -h &quot;$(ip route | grep 'kernel scope link' | awk '{print $9}')&quot; -p
 <pre><code class="language-bash">sudo bro-user --remove postgres
 sudo bro-user postgres
 sudo -iu postgres podman run --rm quay.io/podman/hello
-sudo -iu postgres mkdir -p ~/.config/containers/systemd/
-cat &lt;&lt;'EOF' &gt; ~/.config/containers/systemd/postgresql.container
+sudo -iu postgres mkdir -p ~postgres/.config/containers/systemd/
+cat &lt;&lt;'EOF' | sudo -iu postgres tee ~postgres/.config/containers/systemd/postgresql.container
 [Unit]
 Description=PostgreSQL Container
 
@@ -2012,7 +2012,7 @@ Description=PostgreSQL Container
 Image=docker.io/library/postgres:16
 ContainerName=postgresql
 Environment=POSTGRES_PASSWORD=password
-Volume=/var/lib/containers/unprivileged/postgres/volumes/postgresql:/var/lib/postgresql/data
+# Volume=/var/lib/containers/unprivileged/postgres/volumes/postgresql:/var/lib/postgresql/data
 UserNS=keep-id
 
 [Service]
