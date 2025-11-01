@@ -1,0 +1,72 @@
+.TH bro-activator 1 "October 2025" "Brothaman" "Brothaman User Commands"
+.SH NAME
+bro-activator \- generate socket activation units for rootless Podman containers
+.SH SYNOPSIS
+.B bro-activator
+.B --name
+.I CONTAINER_NAME
+[
+.B --external-port
+.I [ADDR:]PORT
+] [
+.B --internal-port
+.I [ADDR:]PORT
+]
+.SH DESCRIPTION
+.B bro-activator
+creates a socket activator pair for an existing Podman quadlet container.
+It generates a
+.I $CONTAINER_NAME-activator.socket
+and matching
+.I $CONTAINER_NAME-activator.service
+in
+.IR ~/.config/systemd/user/ ,
+updates the container quadlet to disable host port publishing, and wires the
+service to run
+.B systemd-socket-proxyd
+inside the container using
+.BR bro-helper .
+
+The script is intended to be run by the unprivileged account that owns the quadlet.
+It validates port availability, ensures the container quadlet exists, and adjusts
+the configuration to use
+.B Network=none
+instead of Podman port publishing.
+.SH OPTIONS
+.TP
+.B --name CONTAINER_NAME
+Name of the quadlet container (without extension). Required.
+.TP
+.B --external-port [ADDR:]PORT
+Host address and port to listen on. The address defaults to
+.BR 0.0.0.0 .
+.TP
+.B --internal-port [ADDR:]PORT
+Container address and port to forward to. The address defaults to
+.BR 127.0.0.1 .
+.TP
+.B --help
+Display usage information and exit.
+.TP
+.B --version
+Display version information and exit.
+.SH FILES
+.TP
+.I ~/.config/systemd/user/$CONTAINER_NAME-activator.socket
+Generated socket unit.
+.TP
+.I ~/.config/systemd/user/$CONTAINER_NAME-activator.service
+Generated service unit.
+.TP
+.I ~/.config/containers/systemd/$CONTAINER_NAME.container
+Existing container quadlet, updated to remove host port publishing.
+.SH SEE ALSO
+.BR bro-user (1),
+.BR bro-volume (1),
+.BR bro-helper (1),
+.BR systemd.socket (5),
+.BR systemd.service (5),
+.BR systemd-socket-proxyd (8),
+.BR podman (1)
+.SH AUTHORS
+Brothaman Project

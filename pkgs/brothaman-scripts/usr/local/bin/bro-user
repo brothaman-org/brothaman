@@ -20,428 +20,330 @@ fi
 # shellcheck disable=SC1090
 source "${BRO_COMMON}"
 
-# bro-user - Create/remove users configured for rootless Podman
-#
-# Creates/updates OR removes a user configured for rootless Podman with home under:
-#   /var/lib/containers/unprivileged/<username>
-#
-# Create/Update features:
-#   - ZFS dataset for the home (auto-mounted) with optimized settings
-#   - Ensures skeleton files from /etc/skel are present
-#   - --system-user: create as system user (no login shell: /usr/sbin/nologin)
-#   - subuid/subgid ranges (65536)
-#   - per-user storage.conf: overlay + fuse-overlayfs + mountopt="nodev"
-#   - per-user containers.conf with pasta networking
-#   - graphroot: $HOME/.local/share/containers/storage
-#   - loginctl enable-linger <user> for systemd user services
-#
-# Remove:
-#   - --remove: stop user podman resources, disable lingering,
-#               unmount+destroy ZFS, remove subuid/subgid, delete user
-#
-# Usage:
-#   sudo bro-user [--dry-run] [--system-user] [--zfs-parent DATASET] <username>
-#   sudo bro-user --remove [--dry-run] [--zfs-parent DATASET] <username>
-
-DRYRUN=0
-SYSTEM_USER=0
-DO_REMOVE=0
-ZFS_PARENT_DATASET=""
-
-run() { 
-  if (( DRYRUN )); then 
-    bro_info "DRY-RUN: $*"
-  else 
-    "$@"
-  fi
-}
-
-usage() {
-  cat <<EOF
-Usage:
-  Create/Update:
-    $0 [--dry-run] [--system-user] [--zfs-parent DATASET] <username>
-  Remove:
-    $0 --remove [--dry-run] [--zfs-parent DATASET] <username>
-
-Options:
-  --dry-run         Show what would be done without executing
-  --system-user     Create as system user (nologin shell)
-  --zfs-parent DATASET  Parent ZFS dataset for user home
-  --remove          Remove user and all associated resources
-  --help            Show this help message
-
-Examples:
-  sudo bro-user myuser
-  sudo bro-user --system-user --zfs-parent tank/users serviceuser
-  sudo bro-user --remove myuser
-EOF
-}
-
-# Parse arguments
-bro_require_root
-ARGS=()
-while (( $# )); do
-  case "$1" in
-    --dry-run) DRYRUN=1 ;;
-    --system-user) SYSTEM_USER=1 ;;
-    --zfs-parent) shift; [[ $# -gt 0 && -n "${1:-}" ]] || { bro_error "--zfs-parent requires a value"; exit 2; }; ZFS_PARENT_DATASET="$1" ;;
-    --remove) DO_REMOVE=1 ;;
-    -h|--help) usage; exit 0 ;;
-    --) shift; while (( $# )); do ARGS+=("$1"); shift; done; break ;;
-    -* ) bro_error "Unknown option: $1"; exit 2 ;;
-    *  ) ARGS+=("$1") ;;
-  esac
-  shift
-done
-
-(( ${#ARGS[@]} == 1 )) || { bro_error "Exactly one <username> required."; usage; exit 2; }
-USERNAME="${ARGS[0]}"
-
-[[ "$USERNAME" != -* ]] || { bro_error "Username looks like a flag."; exit 2; }
-[[ "$USERNAME" =~ ^[a-z_][a-z0-9_-]*[$]?$ ]] || { bro_error "Invalid username '$USERNAME'."; exit 2; }
-
-# Constants
-USER_HOME_BASE="/var/lib/containers/unprivileged"
-USERNAME_HOME="${USER_HOME_BASE}/${USERNAME}"
-
-SUBUID_FILE="/etc/subuid"
-SUBGID_FILE="/etc/subgid"
+BRO_USER_VERSION="1.0.0"
+DEFAULT_UMASK="0027"
 RANGE_SIZE=65536
 
-XDG_CONFIG_HOME="${USERNAME_HOME}/.config"
-XDG_DATA_HOME="${USERNAME_HOME}/.local/share"
-CONTAINERS_CFG_DIR="${XDG_CONFIG_HOME}/containers"
-CONTAINERS_DATA_DIR="${XDG_DATA_HOME}/containers"
-GRAPHROOT="${CONTAINERS_DATA_DIR}/storage"
-STORAGE_CONF="${CONTAINERS_CFG_DIR}/storage.conf"
-CONTAINERS_CONF="${CONTAINERS_CFG_DIR}/containers.conf"
+USER_HOME_BASE="/var/lib/containers/unprivileged"
+SUBUID_FILE="/etc/subuid"
+SUBGID_FILE="/etc/subgid"
 
-# Check if ZFS is available
-has_zfs() { command -v zfs >/dev/null 2>&1; }
+SYSTEM_USER=0
+DO_REMOVE=0
+USERNAME=""
+BASE_DATASET=""
+USER_DATASET=""
+DATASET_CREATED=0
 
-# Check if dataset exists
-zfs_dataset_exists() { [[ -n "$1" ]] && zfs list -H -o name "$1" >/dev/null 2>&1; }
+usage() {
+  cat <<'EOF'
+Usage:
+  bro-user [--system-user] <username>
+  bro-user --remove <username>
+  bro-user --help
+  bro-user --version
 
-# Get next available subuid/subgid range
-next_subid_range() {
-  local file="$1"
-  local max_start=0
-  while IFS=: read -r user start size || [[ -n "$user" ]]; do
-    [[ -n "$user" && "$user" != "#"* ]] || continue
-    local end=$((start + size))
-    (( end > max_start )) && max_start=$end
-  done < "$file"
-  # Align to 65536 boundary
-  echo $(( (max_start + RANGE_SIZE - 1) / RANGE_SIZE * RANGE_SIZE ))
-}
-
-# Create ZFS dataset for user home
-create_zfs_dataset() {
-  local dataset="$1"
-  bro_info "Creating ZFS dataset: $dataset"
-  run zfs create -o "mountpoint=$USERNAME_HOME" \
-         -o xattr=sa -o acltype=posixacl -o aclinherit=passthrough -o aclmode=passthrough \
-         -o compression=zstd -o atime=off -o recordsize=128K "$dataset"
-}
-
-# Setup subuid/subgid ranges
-setup_subid_ranges() {
-  local uid gid
-  uid=$(id -u "$USERNAME")
-  gid=$(id -g "$USERNAME")
-  
-  # Check if entries already exist
-  if ! grep -q "^$USERNAME:" "$SUBUID_FILE"; then
-    local subuid_start
-    subuid_start=$(next_subid_range "$SUBUID_FILE")
-    bro_info "Adding subuid range: $USERNAME:$subuid_start:$RANGE_SIZE"
-    run bash -c "echo '$USERNAME:$subuid_start:$RANGE_SIZE' >> '$SUBUID_FILE'"
-  fi
-  
-  if ! grep -q "^$USERNAME:" "$SUBGID_FILE"; then
-    local subgid_start
-    subgid_start=$(next_subid_range "$SUBGID_FILE")
-    bro_info "Adding subgid range: $USERNAME:$subgid_start:$RANGE_SIZE"
-    run bash -c "echo '$USERNAME:$subgid_start:$RANGE_SIZE' >> '$SUBGID_FILE'"
-  fi
-}
-
-# Setup container configuration files
-setup_container_configs() {
-  local uid gid
-  uid=$(id -u "$USERNAME")
-  gid=$(id -g "$USERNAME")
-  
-  bro_info "Creating container configuration directories"
-  run mkdir -p "$CONTAINERS_CFG_DIR" "$CONTAINERS_DATA_DIR"
-  
-  # Ensure all parent directories have correct ownership
-  run chown "$uid:$gid" "$XDG_CONFIG_HOME" "$XDG_DATA_HOME"
-  run chown "$uid:$gid" "$CONTAINERS_CFG_DIR" "$CONTAINERS_DATA_DIR"
-  
-  # Create storage.conf
-  bro_info "Creating storage.conf with overlay + fuse-overlayfs"
-  if (( DRYRUN )); then
-    bro_info "DRY-RUN: Creating $STORAGE_CONF"
-  else
-    cat > "$STORAGE_CONF" << EOF
-[storage]
-driver = "overlay"
-graphroot = "$GRAPHROOT"
-runroot = "/run/user/$uid/containers"
-
-[storage.options]
-additionalimagestores = []
-pull_options = {enable_partial_images = "false", use_hard_links = "false", ostree_repos=""}
-
-[storage.options.overlay]
-mountopt = "nodev"
-mount_program = "/usr/bin/fuse-overlayfs"
+Options:
+  --system-user   Create the account as a system user with /usr/sbin/nologin
+  --remove        Remove the account and associated resources
+  --help          Show this message
+  --version       Display bro-user version information
 EOF
-  fi
-  
-  # Create containers.conf
-  bro_info "Creating containers.conf with pasta networking"
-  if (( DRYRUN )); then
-    bro_info "DRY-RUN: Creating $CONTAINERS_CONF"
-  else
-    cat > "$CONTAINERS_CONF" << EOF
-[engine]
-cgroup_manager = "cgroupfs"
-events_logger = "file"
-log_level = "error"
-
-[network]
-default_rootless_network_cmd = "pasta"
-pasta_options = ["-m", "1500"]
-EOF
-  fi
-  
-  run chown "$uid:$gid" "$STORAGE_CONF" "$CONTAINERS_CONF"
 }
 
-# Copy skeleton files
-copy_skeleton() {
-  local uid gid
-  uid=$(id -u "$USERNAME")
-  gid=$(id -g "$USERNAME")
-  
-  if [[ -d /etc/skel ]]; then
-    bro_info "Copying skeleton files from /etc/skel"
-    run cp -r /etc/skel/. "$USERNAME_HOME/"
-    run chown -R "$uid:$gid" "$USERNAME_HOME"
+print_version() {
+  echo "bro-user ${BRO_USER_VERSION}"
+}
+
+parse_args() {
+  local args=()
+  while (( $# )); do
+    case "$1" in
+      --system-user) SYSTEM_USER=1 ;;
+      --remove) DO_REMOVE=1 ;;
+      --help) usage; exit 0 ;;
+      --version) print_version; exit 0 ;;
+      --) shift; while (( $# )); do args+=("$1"); shift; done; break ;;
+      -*)
+        bro_error "Unknown option: $1"
+        usage
+        exit 2
+        ;;
+      *)
+        args+=("$1")
+        ;;
+    esac
+    shift || true
+  done
+
+  (( ${#args[@]} == 1 )) || { bro_error "Exactly one <username> is required."; usage; exit 2; }
+  USERNAME="${args[0]}"
+
+  [[ "${USERNAME}" != -* ]] || { bro_error "Username must not start with '-'."; exit 2; }
+  [[ "${USERNAME}" =~ ^[a-z_][a-z0-9_-]*[$]?$ ]] || { bro_error "Invalid username '${USERNAME}'."; exit 2; }
+  if (( SYSTEM_USER )) && (( DO_REMOVE )); then
+    bro_error "Cannot combine --system-user with --remove."
+    exit 2
   fi
 }
 
-# Enable systemd lingering
-enable_lingering() {
-  bro_info "Enabling systemd lingering for $USERNAME"
-  run loginctl enable-linger "$USERNAME"
-}
-
-# Check for required commands
-check_dependencies() {
+require_dependencies() {
   local missing=()
-  
-  for cmd in useradd userdel loginctl; do
+  for cmd in useradd userdel loginctl zfs zpool getent; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
       missing+=("$cmd")
     fi
   done
-  
   if (( ${#missing[@]} > 0 )); then
     bro_error "Missing required commands: ${missing[*]}"
-    bro_info "Please install required packages:"
-    bro_info "  Debian/Ubuntu: sudo apt install passwd systemd"
+    exit 1
+  fi
+
+  if ! getent group zfshelper >/dev/null 2>&1; then
+    bro_error "Required group 'zfshelper' not found. Ensure the zfs-helper package is installed."
     exit 1
   fi
 }
 
-# Check Podman version and install if needed
-check_podman() {
-  local min_version="4.0.0"
-  
-  if ! command -v podman >/dev/null 2>&1; then
-    bro_warn "Podman not found - installing via bro-install-podman"
-    if command -v bro-install-podman >/dev/null 2>&1; then
-      run bro-install-podman
-    else
-      bro_error "bro-install-podman command not found"
-      bro_info "Please install brothaman-scripts package or run bro-install-podman manually"
-      exit 1
-    fi
-    return 0
-  fi
-  
-  # Get current version
-  local current_version
-  current_version=$(podman --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-  
-  if [[ -z "$current_version" ]]; then
-    bro_warn "Cannot determine Podman version - reinstalling via bro-install-podman"
-    if command -v bro-install-podman >/dev/null 2>&1; then
-      run bro-install-podman
-    else
-      bro_error "bro-install-podman command not found"
-      exit 1
-    fi
-    return 0
-  fi
-  
-  # Compare versions using bro_version_compare from bro-common
-  local version_cmp
-  version_cmp=$(bro_version_compare "$current_version" "$min_version")
-  
-  if (( version_cmp >= 0 )); then
-    bro_info "Podman $current_version is suitable (>= $min_version)"
-  else
-    bro_warn "Podman $current_version is too old (need >= $min_version) - upgrading via bro-install-podman"
-    if command -v bro-install-podman >/dev/null 2>&1; then
-      run bro-install-podman
-    else
-      bro_error "bro-install-podman command not found"
-      exit 1
-    fi
+require_base_dataset() {
+  [[ -d "${USER_HOME_BASE}" ]] || {
+    bro_error "Base directory ${USER_HOME_BASE} not found. Ensure brothaman-scripts post-install steps completed successfully."
+    exit 1
+  }
+
+  BASE_DATASET="$(zfs list -H -o name,mountpoint | awk -v mp="${USER_HOME_BASE}" '$2 == mp {print $1; exit}')"
+  if [[ -z "${BASE_DATASET:-}" ]]; then
+    bro_error "${USER_HOME_BASE} is not backed by a ZFS dataset."
+    exit 1
   fi
 }
 
-# Create user
-create_user() {
-  if id "$USERNAME" &>/dev/null; then
-    bro_warn "User $USERNAME already exists"
-    return 0
+next_subid_range() {
+  local file="$1"
+  local max_end=0
+  while IFS=: read -r user start size || [[ -n "${user}" ]]; do
+    [[ -n "${user}" && "${user}" != "#"* ]] || continue
+    local end=$(( start + size ))
+    (( end > max_end )) && max_end=$end
+  done < "${file}"
+  echo $(( (max_end + RANGE_SIZE - 1) / RANGE_SIZE * RANGE_SIZE ))
+}
+
+ensure_subid_ranges() {
+  local file="$1"
+  [[ -f "${file}" ]] || touch "${file}"
+  if ! grep -q "^${USERNAME}:" "${file}"; then
+    local start
+    start=$(next_subid_range "${file}")
+    echo "${USERNAME}:${start}:${RANGE_SIZE}" >> "${file}"
   fi
-  
-  local shell_bin="/bin/bash"
+}
+
+zfs_dataset_exists() {
+  local dataset="$1"
+  [[ -n "${dataset}" ]] && zfs list -H -o name "${dataset}" >/dev/null 2>&1
+}
+
+prepare_user_dataset() {
+  USER_DATASET="${BASE_DATASET}/${USERNAME}"
+  if zfs_dataset_exists "${USER_DATASET}"; then
+    DATASET_CREATED=0
+    zfs set mountpoint="${USER_HOME_BASE}/${USERNAME}" "${USER_DATASET}" >/dev/null 2>&1 || true
+    return
+  fi
+
+  bro_info "Creating ZFS dataset ${USER_DATASET}"
+  zfs create \
+    -o mountpoint="${USER_HOME_BASE}/${USERNAME}" \
+    -o xattr=sa \
+    -o acltype=posixacl \
+    -o aclinherit=passthrough \
+    -o aclmode=passthrough \
+    -o compression=zstd \
+    -o atime=off \
+    -o recordsize=128K \
+    "${USER_DATASET}"
+  DATASET_CREATED=1
+}
+
+create_user_account() {
+  if id "${USERNAME}" >/dev/null 2>&1; then
+    bro_error "User '${USERNAME}' already exists."
+    exit 1
+  fi
+
+  local shell="/bin/bash"
+  local useradd_opts=("--home-dir" "${USER_HOME_BASE}/${USERNAME}" "--shell" "${shell}" "--no-create-home" "--key" "UMASK=${DEFAULT_UMASK}")
+
   if (( SYSTEM_USER )); then
-    shell_bin="/usr/sbin/nologin"
-    bro_info "Creating system user $USERNAME with nologin shell"
-    run useradd --system --home-dir "$USERNAME_HOME" --create-home --shell "$shell_bin" "$USERNAME"
-  else
-    bro_info "Creating regular user $USERNAME"
-    run useradd --home-dir "$USERNAME_HOME" --create-home --shell "$shell_bin" "$USERNAME"
+    shell="/usr/sbin/nologin"
+    useradd_opts=("--system" "--home-dir" "${USER_HOME_BASE}/${USERNAME}" "--shell" "${shell}" "--no-create-home" "--key" "UMASK=${DEFAULT_UMASK}")
+  fi
+
+  bro_info "Creating user '${USERNAME}'"
+  useradd "${useradd_opts[@]}" "${USERNAME}"
+}
+
+copy_skeleton_files() {
+  local home="${USER_HOME_BASE}/${USERNAME}"
+  if [[ -d /etc/skel ]]; then
+    if (( DATASET_CREATED )); then
+      bro_info "Populating ${home} from /etc/skel"
+      cp -a /etc/skel/. "${home}/" 2>/dev/null || true
+    else
+      bro_info "Dataset already existed; skipping skeleton copy."
+    fi
   fi
 }
 
-# Remove user and all resources
-remove_user() {
-  bro_info "Removing user $USERNAME and all associated resources"
-  
-  # Stop user processes
-  if id "$USERNAME" &>/dev/null; then
-    bro_info "Stopping all processes for user $USERNAME"
-    run bash -c "pkill -u '$USERNAME' || true"
-    run sleep 2
-    run bash -c "pkill -9 -u '$USERNAME' || true"
-  fi
-  
-  # Disable lingering
-  bro_info "Disabling systemd lingering"
-  run bash -c "loginctl disable-linger '$USERNAME' || true"
-  
-  # Remove from subuid/subgid
-  if [[ -f "$SUBUID_FILE" ]]; then
-    bro_info "Removing subuid entries"
-    run sed -i "/^$USERNAME:/d" "$SUBUID_FILE"
-  fi
-  
-  if [[ -f "$SUBGID_FILE" ]]; then
-    bro_info "Removing subgid entries"
-    run sed -i "/^$USERNAME:/d" "$SUBGID_FILE"
-  fi
-  
-  # Handle ZFS dataset
-  if has_zfs; then
-    local dataset
-    if [[ -n "$ZFS_PARENT_DATASET" ]]; then
-      dataset="$ZFS_PARENT_DATASET/$USERNAME"
-    else
-      # Try to detect dataset from mountpoint
-      dataset=$(zfs list -H -o name,mountpoint | awk -v mp="$USERNAME_HOME" '$2 == mp {print $1}')
-    fi
-    
-    if [[ -n "$dataset" ]] && zfs_dataset_exists "$dataset"; then
-      bro_info "Destroying ZFS dataset: $dataset"
-      run zfs destroy "$dataset"
-    fi
-  fi
-  
-  # Remove user account
-  if id "$USERNAME" &>/dev/null; then
-    bro_info "Deleting user account"
-    run userdel "$USERNAME"
-  fi
-  
-  # Clean up home directory if it still exists
-  if [[ -d "$USERNAME_HOME" ]]; then
-    bro_info "Removing home directory: $USERNAME_HOME"
-    run rm -rf "$USERNAME_HOME"
+set_home_permissions() {
+  local home="${USER_HOME_BASE}/${USERNAME}"
+  local uid gid
+  uid=$(id -u "${USERNAME}")
+  gid=$(id -g "${USERNAME}")
+  chown "${uid}:${gid}" "${home}"
+  chmod 0750 "${home}"
+}
+
+append_umask_profile() {
+  local home="${USER_HOME_BASE}/${USERNAME}"
+  local profile="${home}/.profile"
+  local uid gid
+  uid=$(id -u "${USERNAME}")
+  gid=$(id -g "${USERNAME}")
+
+  touch "${profile}"
+  chown "${uid}:${gid}" "${profile}"
+  chmod 0644 "${profile}"
+
+  if ! grep -q 'umask 0027' "${profile}"; then
+    printf '\numask %s\n' "${DEFAULT_UMASK}" >> "${profile}"
   fi
 }
 
-# Main execution
-main() {
-  bro_info "bro-user: $(if (( DO_REMOVE )); then echo "Removing"; else echo "Creating/updating"; fi) user $USERNAME"
-  
-  # Check dependencies first
-  check_dependencies
-  
-  # For user creation, ensure Podman is properly installed
-  if (( ! DO_REMOVE )); then
-    check_podman
+create_required_directories() {
+  local home="${USER_HOME_BASE}/${USERNAME}"
+  local uid gid
+  uid=$(id -u "${USERNAME}")
+  gid=$(id -g "${USERNAME}")
+
+  local dirs=(
+    "${home}/.config"
+    "${home}/.config/containers"
+    "${home}/.config/containers/systemd"
+    "${home}/.config/systemd"
+    "${home}/.config/systemd/user"
+    "${home}/.local/share"
+    "${home}/.local/share/containers"
+    "${home}/.local/share/containers/storage"
+    "${home}/.local/share/systemd"
+  )
+
+  for dir in "${dirs[@]}"; do
+    install -d -m 0750 -o "${uid}" -g "${gid}" "${dir}"
+  done
+}
+
+write_containers_conf() {
+  local home="${USER_HOME_BASE}/${USERNAME}"
+  local containers_conf="${home}/.config/containers/containers.conf"
+  local uid gid
+  uid=$(id -u "${USERNAME}")
+  gid=$(id -g "${USERNAME}")
+
+  cat > "${containers_conf}" <<'EOF'
+[engine]
+network_cmd = "none"
+storage_driver = "overlay"
+storage_options = ["overlay.mountopt=nodev"]
+EOF
+  chown "${uid}:${gid}" "${containers_conf}"
+  chmod 0640 "${containers_conf}"
+}
+
+ensure_zfshelper_membership() {
+  if ! id -nG "${USERNAME}" | grep -qw "zfshelper"; then
+    usermod -aG zfshelper "${USERNAME}"
   fi
-  
-  if (( DO_REMOVE )); then
-    remove_user
-    bro_info "User $USERNAME removed successfully"
-    return 0
+}
+
+enable_lingering() {
+  loginctl enable-linger "${USERNAME}"
+}
+
+configure_subids() {
+  ensure_subid_ranges "${SUBUID_FILE}"
+  ensure_subid_ranges "${SUBGID_FILE}"
+}
+
+remove_user_resources() {
+  if ! id "${USERNAME}" >/dev/null 2>&1; then
+    bro_error "User '${USERNAME}' does not exist."
+    exit 1
   fi
-  
-  # Create user
-  create_user
-  
-  # Create ZFS dataset if requested and possible
-  if has_zfs && [[ -n "$ZFS_PARENT_DATASET" ]]; then
-    if zfs_dataset_exists "$ZFS_PARENT_DATASET"; then
-      local user_dataset="$ZFS_PARENT_DATASET/$USERNAME"
-      if ! zfs_dataset_exists "$user_dataset"; then
-        create_zfs_dataset "$user_dataset"
-      else
-        bro_info "ZFS dataset already exists: $user_dataset"
-      fi
-    else
-      bro_warn "Parent ZFS dataset does not exist: $ZFS_PARENT_DATASET"
+
+  bro_info "Stopping user services for ${USERNAME}"
+  loginctl kill-user "${USERNAME}" || true
+  loginctl disable-linger "${USERNAME}" || true
+
+  bro_info "Removing subuid/subgid mappings"
+  sed -i "/^${USERNAME}:/d" "${SUBUID_FILE}" 2>/dev/null || true
+  sed -i "/^${USERNAME}:/d" "${SUBGID_FILE}" 2>/dev/null || true
+
+  bro_info "Deleting user account ${USERNAME}"
+  userdel --force "${USERNAME}"
+
+  if [[ -n "${BASE_DATASET:-}" ]]; then
+    local dataset="${BASE_DATASET}/${USERNAME}"
+    if zfs_dataset_exists "${dataset}"; then
+      bro_info "Destroying dataset ${dataset}"
+      zfs destroy -r "${dataset}"
     fi
-  elif has_zfs && [[ -d "/var/lib/containers/unprivileged" ]]; then
-    # Auto-detect parent dataset
-    local parent_dataset
-    parent_dataset=$(zfs list -H -o name,mountpoint | awk '$2 == "/var/lib/containers/unprivileged" {print $1}')
-    if [[ -n "$parent_dataset" ]]; then
-      local user_dataset="$parent_dataset/$USERNAME"
-      if ! zfs_dataset_exists "$user_dataset"; then
-        bro_info "Auto-detected parent dataset: $parent_dataset"
-        create_zfs_dataset "$user_dataset"
-      fi
-    fi
   fi
-  
-  # Copy skeleton files
-  copy_skeleton
-  
-  # Setup subuid/subgid ranges
-  setup_subid_ranges
-  
-  # Setup container configurations
-  setup_container_configs
-  
-  # Enable lingering
+
+  local home="${USER_HOME_BASE}/${USERNAME}"
+  if [[ -d "${home}" ]]; then
+    rm -rf "${home}"
+  fi
+
+  bro_info "User ${USERNAME} removed successfully."
+}
+
+create_user_flow() {
+  require_dependencies
+  require_base_dataset
+  prepare_user_dataset
+  create_user_account
+  ensure_zfshelper_membership
+  copy_skeleton_files
+  set_home_permissions
+  append_umask_profile
+  create_required_directories
+  write_containers_conf
+  configure_subids
   enable_lingering
-  
-  bro_info "User $USERNAME configured successfully for rootless containers"
-  bro_info "Home directory: $USERNAME_HOME"
-  bro_info "Storage root: $GRAPHROOT"
+
+  local home="${USER_HOME_BASE}/${USERNAME}"
+  bro_info "User ${USERNAME} configured for rootless Podman."
+  bro_info "Home directory: ${home}"
+  bro_info "Containers config: ${home}/.config/containers/containers.conf"
 }
 
-# Execute main function
+remove_user_flow() {
+  require_dependencies
+  require_base_dataset
+  remove_user_resources
+}
+
+main() {
+  bro_require_root
+  parse_args "$@"
+
+  if (( DO_REMOVE )); then
+    remove_user_flow
+  else
+    create_user_flow
+  fi
+}
+
 main "$@"

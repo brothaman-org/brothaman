@@ -17,6 +17,43 @@ if ! getent group brothaman >/dev/null 2>&1; then
     addgroup --system brothaman
 fi
 
+# Ensure base ZFS dataset for unprivileged users exists
+BASE_DIR="/var/lib/containers/unprivileged"
+if command -v zfs >/dev/null 2>&1 && command -v zpool >/dev/null 2>&1; then
+    DATASET=$(zfs list -H -o name,mountpoint 2>/dev/null | awk -v mp="$BASE_DIR" '$2 == mp {print $1; exit}')
+    if [ -z "$DATASET" ]; then
+        DEFAULT_POOL=$(zpool list -H -o name 2>/dev/null | head -n 1)
+        if [ -n "$DEFAULT_POOL" ]; then
+            DATASET="${DEFAULT_POOL}/brothaman/unprivileged"
+            if ! zfs list "$DATASET" >/dev/null 2>&1; then
+                zfs create -p \
+                    -o mountpoint="$BASE_DIR" \
+                    -o xattr=sa \
+                    -o acltype=posixacl \
+                    -o aclinherit=passthrough \
+                    -o aclmode=passthrough \
+                    -o compression=zstd \
+                    -o atime=off \
+                    -o recordsize=128K \
+                    "$DATASET"
+            else
+                zfs set mountpoint="$BASE_DIR" "$DATASET"
+            fi
+        fi
+    fi
+    if [ -n "$DATASET" ]; then
+        zfs set xattr=sa "$DATASET" >/dev/null 2>&1 || true
+        zfs set acltype=posixacl "$DATASET" >/dev/null 2>&1 || true
+        zfs set aclinherit=passthrough "$DATASET" >/dev/null 2>&1 || true
+        zfs set aclmode=passthrough "$DATASET" >/dev/null 2>&1 || true
+        zfs set compression=zstd "$DATASET" >/dev/null 2>&1 || true
+        zfs set atime=off "$DATASET" >/dev/null 2>&1 || true
+        zfs set recordsize=128K "$DATASET" >/dev/null 2>&1 || true
+    fi
+fi
+
+install -d -m 0750 "$BASE_DIR"
+
 echo "Brothaman scripts installed successfully!"
 echo "Configuration available in: /etc/brothaman/config"
 echo "Shared library available at: /usr/local/share/brothaman/bro-common"

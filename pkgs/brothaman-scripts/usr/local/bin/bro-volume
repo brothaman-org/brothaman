@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# BRO_COMMON resolution
+# Resolve bro-common path
 if [[ -z "${BRO_COMMON:-}" ]]; then
   if [[ -r "/usr/local/share/brothaman/bro-common" ]]; then
     export BRO_COMMON="/usr/local/share/brothaman/bro-common"
@@ -20,19 +20,277 @@ fi
 # shellcheck disable=SC1090
 source "${BRO_COMMON}"
 
-MODE="ansible"
-ARGS=()
-for a in "$@"; do
-  case "$a" in
-    --script) MODE="script" ;;
-    *) ARGS+=("$a") ;;
+BRO_VOLUME_VERSION="1.0.0"
+USER_BASE="/var/lib/containers/unprivileged"
+POLICY_BASE="/etc/zfs-helper/policy.d"
+DEFAULT_RETENTION=5
+
+NAME=""
+MOUNT_POINT=""
+CONTAINER_NAME=""
+OWNER=""
+RETENTION="${DEFAULT_RETENTION}"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  bro-volume --name NAME --owner USERNAME [options]
+
+Options:
+  --name NAME                 ZFS volume/dataset name (required)
+  --owner USERNAME            Unprivileged account that owns the volume (required)
+  --mount-point PATH          Mount point for the dataset (defaults to /var/lib/containers/unprivileged/OWNER/volumes/NAME)
+  --container CONTAINER_NAME  Container unit that consumes the volume (adds PartOf=)
+  --pre_snapshots NUM         Retention count for pre_ snapshots (default 5, 0 disables)
+  --help                      Show this help text
+  --version                   Display bro-volume version
+EOF
+}
+
+print_version() {
+  echo "bro-volume ${BRO_VOLUME_VERSION}"
+}
+
+parse_args() {
+  while (( $# )); do
+    case "$1" in
+      --name) shift; NAME="${1:-}";;
+      --owner) shift; OWNER="${1:-}";;
+      --mount-point) shift; MOUNT_POINT="${1:-}";;
+      --container) shift; CONTAINER_NAME="${1:-}";;
+      --pre_snapshots) shift; RETENTION="${1:-}";;
+      --help) usage; exit 0;;
+      --version) print_version; exit 0;;
+      -*)
+        bro_error "Unknown option: $1"
+        usage
+        exit 2
+        ;;
+      *)
+        bro_error "Unexpected argument: $1"
+        usage
+        exit 2
+        ;;
+    esac
+    shift || true
+  done
+
+  [[ -n "${NAME}" ]] || { bro_error "--name is required"; exit 2; }
+  [[ -n "${OWNER}" ]] || { bro_error "--owner is required"; exit 2; }
+
+  [[ "${NAME}" =~ ^[a-zA-Z0-9._-]+$ ]] || { bro_error "Invalid volume name '${NAME}'"; exit 2; }
+  [[ "${OWNER}" =~ ^[a-z_][a-z0-9_-]*[$]?$ ]] || { bro_error "Invalid owner username '${OWNER}'"; exit 2; }
+
+  if [[ -n "${CONTAINER_NAME}" && ! "${CONTAINER_NAME}" =~ ^[a-zA-Z0-9._@-]+$ ]]; then
+    bro_error "Invalid container name '${CONTAINER_NAME}'"
+    exit 2
+  fi
+
+  if ! [[ "${RETENTION}" =~ ^[0-9]+$ ]]; then
+    bro_error "--pre_snapshots must be a non-negative integer"
+    exit 2
+  fi
+}
+
+require_dependencies() {
+  local missing=()
+  for cmd in zfs zpool zfs-helperctl useradd usermod install awk; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+      missing+=("$cmd")
+    fi
+  done
+  if (( ${#missing[@]} > 0 )); then
+    bro_error "Missing required commands: ${missing[*]}"
+    exit 1
+  fi
+
+  ZFS_BIN="$(command -v zfs)"
+  ZPOOL_BIN="$(command -v zpool)"
+  ZFS_HELPERCTL_BIN="$(command -v zfs-helperctl)"
+}
+
+ensure_owner_account() {
+  if ! id "${OWNER}" >/dev/null 2>&1; then
+    bro_info "Owner '${OWNER}' not found – creating via bro-user"
+    if ! command -v bro-user >/dev/null 2>&1; then
+      bro_error "bro-user command not available to create owner '${OWNER}'"
+      exit 1
+    fi
+    bro-user "${OWNER}"
+  fi
+
+  if ! id -nG "${OWNER}" | grep -qw zfshelper; then
+    bro_info "Adding ${OWNER} to zfshelper group"
+    usermod -aG zfshelper "${OWNER}"
+  fi
+}
+
+resolve_paths() {
+  [[ -d "${USER_BASE}" ]] || {
+    bro_error "Base directory ${USER_BASE} not found. Install brothaman-scripts package first."
+    exit 1
+  }
+
+  OWNER_HOME="${USER_BASE}/${OWNER}"
+  [[ -d "${OWNER_HOME}" ]] || {
+    bro_error "Owner home ${OWNER_HOME} not found."
+    exit 1
+  }
+
+  OWNER_DATASET="$(zfs list -H -o name,mountpoint | awk -v mp="${OWNER_HOME}" '$2 == mp {print $1; exit}')"
+  [[ -n "${OWNER_DATASET}" ]] || {
+    bro_error "Unable to resolve ZFS dataset backing ${OWNER_HOME}"
+    exit 1
+  }
+
+  if [[ -z "${MOUNT_POINT}" ]]; then
+    MOUNT_POINT="${OWNER_HOME}/volumes/${NAME}"
+  fi
+
+  if [[ "${MOUNT_POINT}" != /* ]]; then
+    bro_error "Mount point must be an absolute path: ${MOUNT_POINT}"
+    exit 1
+  fi
+
+  case "${MOUNT_POINT}" in
+    "${OWNER_HOME}/"*) ;;
+    "${OWNER_HOME}") ;;
+    *)
+      bro_error "Mount point must reside under ${OWNER_HOME}"
+      exit 1
+      ;;
   esac
-done
 
-if [[ "$MODE" == ansible ]]; then
-  bro_run_ansible "$(basename "$0")" "${ARGS[@]:-}"
-  exit 0
-fi
+  VOLUME_DATASET="${OWNER_DATASET}/volumes/${NAME}"
+  VOLUME_UNIT="${NAME}-volume.service"
+  OWNER_UID=$(id -u "${OWNER}")
+  OWNER_GID=$(id -g "${OWNER}")
 
-# --- shell mode ---
-bro_log "(shell mode) bro-install-zfs would install ZFS here."
+  install -d -m 0750 -o "${OWNER_UID}" -g "${OWNER_GID}" "${OWNER_HOME}/volumes"
+}
+
+create_dataset() {
+  if "${ZFS_BIN}" list "${VOLUME_DATASET}" >/dev/null 2>&1; then
+    bro_info "Dataset ${VOLUME_DATASET} already exists – ensuring properties"
+  else
+    bro_info "Creating dataset ${VOLUME_DATASET}"
+    "${ZFS_BIN}" create -p \
+      -o mountpoint="${MOUNT_POINT}" \
+      -o xattr=sa \
+      -o acltype=posixacl \
+      -o aclinherit=passthrough \
+      -o aclmode=passthrough \
+      -o compression=zstd \
+      -o atime=off \
+      -o recordsize=128K \
+      "${VOLUME_DATASET}"
+  fi
+
+  "${ZFS_BIN}" set mountpoint="${MOUNT_POINT}" "${VOLUME_DATASET}"
+  "${ZFS_BIN}" set xattr=sa "${VOLUME_DATASET}" >/dev/null 2>&1 || true
+  "${ZFS_BIN}" set acltype=posixacl "${VOLUME_DATASET}" >/dev/null 2>&1 || true
+  "${ZFS_BIN}" set aclinherit=passthrough "${VOLUME_DATASET}" >/dev/null 2>&1 || true
+  "${ZFS_BIN}" set aclmode=passthrough "${VOLUME_DATASET}" >/dev/null 2>&1 || true
+  "${ZFS_BIN}" set compression=zstd "${VOLUME_DATASET}" >/dev/null 2>&1 || true
+  "${ZFS_BIN}" set atime=off "${VOLUME_DATASET}" >/dev/null 2>&1 || true
+  "${ZFS_BIN}" set recordsize=128K "${VOLUME_DATASET}" >/dev/null 2>&1 || true
+
+  install -d -m 0750 "${MOUNT_POINT}"
+  "${ZFS_BIN}" mount "${VOLUME_DATASET}" >/dev/null 2>&1 || true
+  chown "${OWNER_UID}:${OWNER_GID}" "${MOUNT_POINT}"
+}
+
+ensure_policy_entry() {
+  local file="$1"
+  local line="$2"
+  local path="${POLICY_DIR}/${file}"
+
+  touch "${path}"
+  if ! grep -Fxq "${line}" "${path}"; then
+    echo "${line}" >> "${path}"
+  fi
+}
+
+configure_zfs_helper_policy() {
+  POLICY_DIR="${POLICY_BASE}/${OWNER}"
+  install -d -m 0750 "${POLICY_DIR}"
+
+  ensure_policy_entry "units.list" "${VOLUME_UNIT}"
+
+  local dataset_line="${OWNER} ${VOLUME_DATASET}"
+  for list in mount.list unmount.list snapshot.list rollback.list create.list destroy.list; do
+    ensure_policy_entry "${list}" "${dataset_line}"
+  done
+}
+
+container_service_name() {
+  local name="$1"
+  if [[ "${name}" == *.service ]]; then
+    echo "${name}"
+  else
+    echo "${name}.service"
+  fi
+}
+
+generate_quadlet() {
+  local config_dir="${OWNER_HOME}/.config/containers/systemd"
+  install -d -m 0750 -o "${OWNER_UID}" -g "${OWNER_GID}" "${config_dir}"
+
+  local quadlet_path="${config_dir}/${NAME}.volume"
+  local container_part=""
+  if [[ -n "${CONTAINER_NAME}" ]]; then
+    container_part="PartOf=$(container_service_name "${CONTAINER_NAME}")"
+  fi
+
+  local zfs_bin="${ZFS_BIN}"
+  local zfs_helper="${ZFS_HELPERCTL_BIN}"
+
+  cat > "${quadlet_path}" <<EOF
+[Unit]
+Description=${NAME} ZFS Volume for ${OWNER}
+Wants=zfs-mount.service
+After=zfs-mount.service
+${container_part}
+
+[Volume]
+VolumeName=${NAME}
+
+[Service]
+Environment=MOUNT_POINT=${MOUNT_POINT}
+Environment=VOLUME_DATASET=${VOLUME_DATASET}
+Environment=OWNER_USER=${OWNER}
+Environment=OWNER_UID=${OWNER_UID}
+Environment=OWNER_GID=${OWNER_GID}
+Environment=KEEP_SNAPSHOTS=${RETENTION}
+ExecStartPre=/bin/sh -c 'install -d -m 0750 "$${MOUNT_POINT}"'
+ExecStartPre=/bin/sh -c 'chown "$${OWNER_UID}:$${OWNER_GID}" "$${MOUNT_POINT}"'
+ExecStartPre=/bin/sh -c 'if [ "$${KEEP_SNAPSHOTS}" -gt 0 ]; then ${zfs_helper} snapshot "$${VOLUME_DATASET}@pre_$$(date +%%Y%%m%%d%%H%%M%%S)"; fi'
+ExecStartPre=/bin/sh -c 'if [ "$${KEEP_SNAPSHOTS}" -gt 0 ]; then ${zfs_bin} list -t snapshot -o name -s creation | grep -E "^$${VOLUME_DATASET}@pre_" | head -n -$${KEEP_SNAPSHOTS} | xargs -r -n1 ${zfs_helper} destroy; fi'
+ExecStart=${zfs_helper} mount "$${VOLUME_DATASET}"
+ExecStop=${zfs_helper} unmount "$${VOLUME_DATASET}"
+
+[Install]
+WantedBy=default.target
+EOF
+
+  chown "${OWNER_UID}:${OWNER_GID}" "${quadlet_path}"
+  chmod 0640 "${quadlet_path}"
+}
+
+main() {
+  bro_require_root
+  parse_args "$@"
+  require_dependencies
+  ensure_owner_account
+  resolve_paths
+  create_dataset
+  configure_zfs_helper_policy
+  generate_quadlet
+
+  bro_info "Volume '${NAME}' configured for user '${OWNER}'."
+  bro_info "Dataset: ${VOLUME_DATASET}"
+  bro_info "Mount point: ${MOUNT_POINT}"
+  bro_info "Quadlet: ${OWNER_HOME}/.config/containers/systemd/${NAME}.volume"
+}
+
+main "$@"

@@ -1,0 +1,66 @@
+.TH bro-volume 1 "October 2025" "Brothaman" "Brothaman User Commands"
+.SH NAME
+bro-volume \- create and manage ZFS-backed volumes for rootless Podman containers
+.SH SYNOPSIS
+.B bro-volume
+--name NAME --owner USERNAME [options]
+.SH DESCRIPTION
+.B bro-volume
+provisions a ZFS dataset for a rootless container user and emits the matching
+Podman quadlet (.volume) so systemd can manage the storage lifecycle separately
+from containers. The dataset is created beneath the owner’s ZFS-backed home
+(\fI/var/lib/containers/unprivileged/USERNAME\fR), inherits hardened properties,
+and is wired into
+.B zfs-helper
+policies for delegated operations.
+
+The tool writes
+.IR ~/.config/containers/systemd/NAME.volume ,
+optionally links the volume to a container unit via
+.B PartOf=
+, and configures snapshot retention using
+.B zfs-helperctl .
+.SH OPTIONS
+.TP
+.B --name NAME
+Dataset/volume identifier (required).
+.TP
+.B --owner USERNAME
+Unprivileged user who owns the volume (required).
+.TP
+.B --mount-point PATH
+Override the mount point (defaults to
+.IR /var/lib/containers/unprivileged/OWNER/volumes/NAME ).
+.TP
+.B --container CONTAINER_NAME
+Add a
+.B PartOf=
+relationship to the given container unit.
+.TP
+.B --pre_snapshots NUM
+Retention count for
+.B pre_
+start snapshots (default 5, 0 disables).
+.TP
+.B --help
+Display usage information and exit.
+.TP
+.B --version
+Display version information and exit.
+.SH FILES
+.TP
+.I /var/lib/containers/unprivileged/OWNER/volumes/NAME
+Mount point for the dataset.
+.TP
+.I ~/.config/containers/systemd/NAME.volume
+Generated quadlet unit describing the volume.
+.TP
+.I /etc/zfs-helper/policy.d/OWNER
+zfs-helper policy entries updated to grant delegated control.
+.SH SEE ALSO
+.BR bro-user (1),
+.BR bro-activator (1),
+.BR zfs-helperctl (8),
+.BR podman (1)
+.SH AUTHORS
+Brothaman Project
