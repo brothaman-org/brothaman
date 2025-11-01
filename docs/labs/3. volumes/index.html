@@ -1044,9 +1044,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#6-rollback-optional" class="md-nav__link">
+  <a href="#6-using-bro-commands" class="md-nav__link">
     <span class="md-ellipsis">
-      6. Rollback (Optional)
+      6. Using Bro Commands
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-rollback-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      7. Rollback (Optional)
     </span>
   </a>
   
@@ -1530,9 +1539,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#6-rollback-optional" class="md-nav__link">
+  <a href="#6-using-bro-commands" class="md-nav__link">
     <span class="md-ellipsis">
-      6. Rollback (Optional)
+      6. Using Bro Commands
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-rollback-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      7. Rollback (Optional)
     </span>
   </a>
   
@@ -1980,7 +1998,38 @@ psql -h &quot;$(ip route | grep 'kernel scope link' | awk '{print $9}')&quot; -p
 <p>If an attacker only gets shell access as a user who happens to be in the <code>zfshelper</code> group, the cgroup gate keeps them from just running <code>zfs-helperctl</code> by hand—their shell sits in a session cgroup, not the whitelisted service cgroup, so the helper denies the request. This blocks one of the easiest privilege-abuse paths and gives you auditability (“we know postgres-data-volume.service asked for that snapshot”). Another reason why a separate volume quadlet as a separate service is a good security practice.</p>
 <p>A compromised account can still try to install a brand new user service, but it won't match anything in <code>units.list</code>, so the helper still rejects those calls. To succeed they'd have to hijack an already-authorized unit name; at that point they can trigger whatever operations you've granted to that unit (destroy snapshots, etc.), but only on the datasets/verbs you explicitly allowed. They cannot grant themselves access to other datasets or new verbs without compromising the root-maintained policy files.</p>
 <p>Bottom line: membership in the <code>zfshelper</code> group is powerful and should be restricted, yet the cgroup check sharply limits post-compromise blast radius to the exact dataset+operation pairs you've whitelisted. The helper doesn't stop a user from abusing the privileges you intentionally delegated, so continue to scope those policy entries tightly and monitor the corresponding services' behavior.</p>
-<h2 id="6-rollback-optional">6. Rollback (Optional)</h2>
+<h2 id="6-using-bro-commands">6. Using Bro Commands</h2>
+<p>Now let's see how we can do all these things EZ PZ with Brothaman:</p>
+<pre><code class="language-bash">sudo bro-user --remove postgres
+sudo bro-user postgres
+sudo -iu postgres podman run --rm quay.io/podman/hello
+sudo -iu postgres mkdir -p ~/.config/containers/systemd/
+sudo -iu postgres cat &gt; ~/.config/containers/systemd/postgresql.container &lt;&lt;'EOF'
+[Unit]
+Description=PostgreSQL Container
+
+[Container]
+Image=docker.io/library/postgres:16
+ContainerName=postgresql
+Environment=POSTGRES_PASSWORD=password
+UserNS=keep-id
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+StartLimitBurst=5
+RestartSec=10s
+
+[Install]
+WantedBy=default.target
+
+EOF
+
+sudo -iu postgres systemctl --user daemon-reload
+sudo -iu postgres systemctl --user start postgresql.service
+sudo -iu postgres systemctl --user status postgresql.service -l --no-pager
+</code></pre>
+<h2 id="7-rollback-optional">7. Rollback (Optional)</h2>
 <p>When you're done testing, you can revert the VM to the snapshot created before starting this lab in step #0. This operation occurs on the host outside of the VM (not to be confused with ZFS snapshots):</p>
 <pre><code class="language-bash">vagrant snapshot restore before-volumes
 </code></pre>
