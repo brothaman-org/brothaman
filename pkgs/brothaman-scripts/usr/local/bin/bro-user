@@ -226,6 +226,10 @@ copy_skeleton_files() {
     if (( DATASET_CREATED )); then
       bro_info "Populating ${home} from /etc/skel"
       cp -a /etc/skel/. "${home}/" 2>/dev/null || true
+      local uid gid
+      uid=$(id -u "${USERNAME}")
+      gid=$(id -g "${USERNAME}")
+      chown -R "${uid}:${gid}" "${home}"
     else
       bro_info "Dataset already existed; skipping skeleton copy."
     fi
@@ -297,9 +301,71 @@ EOF
   chmod 0640 "${containers_conf}"
 }
 
+write_storage_conf() {
+  local home="${USER_HOME_BASE}/${USERNAME}"
+  local storage_conf="${home}/.config/containers/storage.conf"
+  local uid gid
+  uid=$(id -u "${USERNAME}")
+  gid=$(id -g "${USERNAME}")
+  local graphroot="${home}/.local/share/containers/storage"
+  local runroot="/run/user/${uid}/containers"
+
+  cat > "${storage_conf}" <<EOF
+[storage]
+driver = "overlay"
+graphroot = "${graphroot}"
+runroot = "${runroot}"
+
+[storage.options]
+mount_program = "/usr/bin/fuse-overlayfs"
+mountopt = "nodev"
+EOF
+  chown "${uid}:${gid}" "${storage_conf}"
+  chmod 0640 "${storage_conf}"
+}
+
 ensure_zfshelper_membership() {
   if ! id -nG "${USERNAME}" | grep -qw "zfshelper"; then
     usermod -aG zfshelper "${USERNAME}"
+  fi
+}
+
+kill_user_processes() {
+  if ! id "${USERNAME}" >/dev/null 2>&1; then
+    return
+  fi
+
+  bro_info "Stopping user processes for ${USERNAME}"
+  loginctl kill-user "${USERNAME}" >/dev/null 2>&1 || true
+
+  local attempt
+  for attempt in {1..10}; do
+    if ! pgrep -u "${USERNAME}" >/dev/null 2>&1; then
+      return
+    fi
+    sleep 1
+  done
+
+  bro_info "Sending SIGTERM to remaining processes"
+  pkill -TERM -u "${USERNAME}" >/dev/null 2>&1 || true
+  for attempt in {1..5}; do
+    if ! pgrep -u "${USERNAME}" >/dev/null 2>&1; then
+      return
+    fi
+    sleep 1
+  done
+
+  bro_info "Force killing remaining processes"
+  pkill -KILL -u "${USERNAME}" >/dev/null 2>&1 || true
+  for attempt in {1..5}; do
+    if ! pgrep -u "${USERNAME}" >/dev/null 2>&1; then
+      return
+    fi
+    sleep 1
+  done
+
+  if pgrep -u "${USERNAME}" >/dev/null 2>&1; then
+    bro_warn "Some processes for ${USERNAME} are still running; manual cleanup may be required."
   fi
 }
 
@@ -318,8 +384,7 @@ remove_user_resources() {
     exit 1
   fi
 
-  bro_info "Stopping user services for ${USERNAME}"
-  loginctl kill-user "${USERNAME}" || true
+  kill_user_processes
   loginctl disable-linger "${USERNAME}" || true
 
   bro_info "Removing subuid/subgid mappings"
@@ -327,13 +392,23 @@ remove_user_resources() {
   sed -i "/^${USERNAME}:/d" "${SUBGID_FILE}" 2>/dev/null || true
 
   bro_info "Deleting user account ${USERNAME}"
-  userdel --force "${USERNAME}"
+  if ! userdel --force "${USERNAME}"; then
+    bro_warn "userdel reported an error; retrying after killing lingering processes."
+    kill_user_processes
+    userdel --force "${USERNAME}" || bro_warn "userdel still failed; user entry may require manual cleanup."
+  fi
 
   if [[ -n "${BASE_DATASET:-}" ]]; then
     local dataset="${BASE_DATASET}/${USERNAME}"
     if zfs_dataset_exists "${dataset}"; then
       bro_info "Destroying dataset ${dataset}"
-      zfs destroy -r "${dataset}"
+      if ! zfs destroy -r "${dataset}"; then
+        bro_warn "Dataset ${dataset} busy; attempting forced unmount"
+        zfs unmount -f "${dataset}" >/dev/null 2>&1 || true
+        if ! zfs destroy -r "${dataset}"; then
+          bro_warn "Failed to destroy dataset ${dataset}. Manual cleanup may be required."
+        fi
+      fi
     fi
   fi
 
@@ -357,6 +432,7 @@ create_user_flow() {
   append_umask_profile
   create_required_directories
   write_containers_conf
+  write_storage_conf
   configure_subids
   enable_lingering
 
