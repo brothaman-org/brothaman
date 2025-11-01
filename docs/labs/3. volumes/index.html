@@ -2004,7 +2004,7 @@ psql -h &quot;$(ip route | grep 'kernel scope link' | awk '{print $9}')&quot; -p
 sudo bro-user postgres
 sudo -iu postgres podman run --rm quay.io/podman/hello
 sudo -iu postgres mkdir -p ~/.config/containers/systemd/
-sudo -iu postgres cat &gt; ~/.config/containers/systemd/postgresql.container &lt;&lt;'EOF'
+cat | sudo -iu postgres tee ~postgres/.config/containers/systemd/postgresql.container &lt;&lt;'EOF'
 [Unit]
 Description=PostgreSQL Container
 
