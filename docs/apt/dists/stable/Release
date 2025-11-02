@@ -3,37 +3,37 @@ Label: Brothaman APT Repository
 Suite: stable
 Version: 1.0
 Codename: stable
-Date: Sat, 01 Nov 2025 17:12:34 +0000
+Date: Sun, 02 Nov 2025 12:48:32 +0000
 Architectures: amd64 arm64 all
 Components: main
 Description: APT repository for Brothaman hosted on GitHub Pages
 MD5Sum:
- 1ffeb98be13a82b26522e800dee6f156     990 main/binary-amd64/Packages.gz
- edb4f10309e8d9400c36a1f356acc4e7    1055 main/binary-amd64/Packages.bz2
- 61883cdc4695e2af7419ec159f4921a8    1906 main/binary-amd64/Packages
- 889c58418b0ad01fc185fda3a5d8c371     655 main/binary-all/Packages.gz
- a8531f649a0b1fc1c24aca1f89b1e4f7     685 main/binary-all/Packages.bz2
- 55fb3d3d7a272da2a80fd1c66753ab04    1127 main/binary-all/Packages
- bc85d5a7bb04f3117360580daad8c852      29 main/binary-arm64/Packages.gz
+ 95628dbf2f9b9ebb7d54205e90e16e5d     934 main/binary-amd64/Packages.gz
+ 8e9d9d5af264d41f25b52d2d5e94b642    1004 main/binary-amd64/Packages.bz2
+ eda808a8677750bfcf0c082d18e3eb88    1830 main/binary-amd64/Packages
+ 340641c51441ce29c91b33b586ac29d5     656 main/binary-all/Packages.gz
+ 21b8db3a5e694374759c5a1cc44605f8     707 main/binary-all/Packages.bz2
+ 3e1d03663a705515a55b20b59cc0f9f1    1127 main/binary-all/Packages
+ 1d33336bffeb10b4f08f1a5a57f27f55      29 main/binary-arm64/Packages.gz
  4059d198768f9f8dc9372dc1c54bc3c3      14 main/binary-arm64/Packages.bz2
  d41d8cd98f00b204e9800998ecf8427e       0 main/binary-arm64/Packages
 SHA1:
- 9476ad5d9d07be75eddaaae6580a0d388ab90732     990 main/binary-amd64/Packages.gz
- e700406f28de75869e409b1766730e63f329239c    1055 main/binary-amd64/Packages.bz2
- 63ae726ac1d3a118ad0b167e2dac00b6eed0776e    1906 main/binary-amd64/Packages
- 101d24e9cecc55c9a8df7e473ca534b6fe4aadd3     655 main/binary-all/Packages.gz
- cbc9b64b5fea6ac98f957738d3a511f7d9c4e9e4     685 main/binary-all/Packages.bz2
- d9a34e7f8bb3fc36199a4c87a54687153758db04    1127 main/binary-all/Packages
- 214db26cab56b4b65c5b619c5331bcbb998932e0      29 main/binary-arm64/Packages.gz
+ 0571904277be386010c90a8dda4ffe97e055ba62     934 main/binary-amd64/Packages.gz
+ a7b7953f5a4983b4fe0bc3e7e05cbda170a802e4    1004 main/binary-amd64/Packages.bz2
+ 75d91c92ec9e3881b2512c97aa8f6d92248c0ed2    1830 main/binary-amd64/Packages
+ d9cd4aafa7e08a9eeb30739c270d9e5aea2f775f     656 main/binary-all/Packages.gz
+ 1fa9f91dda9ee31d2b9c67af4c7cd5f98d3eee37     707 main/binary-all/Packages.bz2
+ b0c49666ab22c8921562e3de36771e01900b8132    1127 main/binary-all/Packages
+ fa07bdbf296fdc4d3d9888e8554a3ac913059bf0      29 main/binary-arm64/Packages.gz
  64a543afbb5f4bf728636bdcbbe7a2ed0804adc2      14 main/binary-arm64/Packages.bz2
  da39a3ee5e6b4b0d3255bfef95601890afd80709       0 main/binary-arm64/Packages
 SHA256:
- 8d7f4a13cb365424a47a3b01f407cdd26ccd22bd4d7c371e1fc3ab0fe1c9d21f     990 main/binary-amd64/Packages.gz
- 7a9a06aa9d82af1db00a7614a4ba39eb8c449f8c8fee636805fa61986316402d    1055 main/binary-amd64/Packages.bz2
- 20a42f8acafb8607fe04ae4f47d2b200ccef6a7271ee7e3de969b9588bf158d4    1906 main/binary-amd64/Packages
- 871665a54d481160c10c29342fd8cfbcfe4342aa23be7d238466f21fa724cd57     655 main/binary-all/Packages.gz
- f95eefd7dbb3e01411818e4127eeee49542470b727620809b2fd6deb50e590a8     685 main/binary-all/Packages.bz2
- 079436595cbf55c3e44322ccdc5188985ab7bf9ea0c796f7a0d7e9e6f6fb84ed    1127 main/binary-all/Packages
- f28573b6a89461bf34594891522a7114d624dbbfa90a97386c53deccae0a6833      29 main/binary-arm64/Packages.gz
+ c67aa698a5abe8aa57b27d035f1da91806d77e3cfa7d896464a421ada9db18ee     934 main/binary-amd64/Packages.gz
+ a8e9fb5424f515cc48000136ff872beef3f688e1307d70b72a190516bd9f7234    1004 main/binary-amd64/Packages.bz2
+ facc33bd3bdcb496ed7c891c497f1a9b677fbe9f1b6dc36fec0f0a2cfc89162d    1830 main/binary-amd64/Packages
+ 8221f6556f3a6d9e8aed679944b44f2882047dbac869651f0e79c7b69d2c5da1     656 main/binary-all/Packages.gz
+ 6e86a8621a71f7166163deb25d44bb7ea14b9a32b7b2946661f00757736ebb14     707 main/binary-all/Packages.bz2
+ ab5cd338fb8f79ae7ce14af1ad7ceab1ae99d11874aa3a7f6290681bb5a1e0ee    1127 main/binary-all/Packages
+ ef2dc73f3b52897d504f3a56291d7572571ed8711400da7d5416b87ce2b5b450      29 main/binary-arm64/Packages.gz
  d3dda84eb03b9738d118eb2be78e246106900493c0ae07819ad60815134a8058      14 main/binary-arm64/Packages.bz2
  e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855       0 main/binary-arm64/Packages

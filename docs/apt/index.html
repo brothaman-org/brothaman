@@ -27,13 +27,12 @@ sudo apt update</code></pre>
         <div id="packages">
             <div class="package">
                 <h3>brothaman-helper (1.0.0)</h3>
-                <p>Network namespace helper utility for brothaman
- A security-focused helper utility that allows specific network commands
- to be executed within network namespaces owned by the same user.
+                <p>Network namespace helper utilities for brothaman
+ Security-focused helper utilities for network namespace operations.
  .
- This tool provides controlled access to network namespaces for utilities
- like curl, ip, netstat, and systemd-socket-proxyd while maintaining
- security by validating namespace ownership.</p>
+ Includes bro-helper for namespace access with ownership validation
+ and bro-nsenter for entering container namespaces with FD preservation
+ for systemd socket activation support.</p>
                 <code>sudo apt install brothaman-helper</code>
             </div>
             <div class="package">

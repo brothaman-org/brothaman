@@ -5,10 +5,9 @@ Priority: optional
 Architecture: amd64
 Depends: libc6 (>= 2.34)
 Maintainer: brothaman <brothaman@example.com>
-Description: Network namespace helper utility for brothaman
- A security-focused helper utility that allows specific network commands
- to be executed within network namespaces owned by the same user.
+Description: Network namespace helper utilities for brothaman
+ Security-focused helper utilities for network namespace operations.
  .
- This tool provides controlled access to network namespaces for utilities
- like curl, ip, netstat, and systemd-socket-proxyd while maintaining
- security by validating namespace ownership.
+ Includes bro-helper for namespace access with ownership validation
+ and bro-nsenter for entering container namespaces with FD preservation
+ for systemd socket activation support.

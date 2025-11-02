@@ -3,7 +3,7 @@
 
 set -e
 
-echo "Building brothaman-helper..."
+echo "Building brothaman-helper package..."
 
 # Change to source directory
 cd "$(dirname "$0")/src"
@@ -15,10 +15,11 @@ make
 # Create destination directory if it doesn't exist
 mkdir -p ../usr/local/bin
 
-# Install binary
+# Install binaries
 cp bro-helper ../usr/local/bin/
 
 # Set permissions
 chmod 755 ../usr/local/bin/bro-helper
 
 echo "Build completed successfully!"
+echo "Built: bro-helper"

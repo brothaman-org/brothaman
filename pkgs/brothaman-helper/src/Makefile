@@ -1,18 +1,18 @@
-CFLAGS = -O2 -Wall -Wextra
+CFLAGS = -O2 -Wall -Wextra -std=c99
 CC = gcc
-TARGET = bro-helper
-SOURCE = bro-helper.c
+TARGETS = bro-helper
+SOURCES = bro-helper.c
 DESTDIR = /usr/local/bin
 
-all: $(TARGET)
+all: $(TARGETS)
 
-$(TARGET): $(SOURCE)
-	$(CC) $(CFLAGS) -static -o $(TARGET) $(SOURCE) 2>/dev/null || $(CC) $(CFLAGS) -o $(TARGET) $(SOURCE)
+bro-helper: bro-helper.c
+	$(CC) $(CFLAGS) -static -o $@ $< 2>/dev/null || $(CC) $(CFLAGS) -o $@ $<
 
-install: $(TARGET)
-	install -D -m 755 $(TARGET) $(DESTDIR)/$(TARGET)
+install: $(TARGETS)
+	install -D -m 755 bro-helper $(DESTDIR)/bro-helper
 
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGETS)
 
 .PHONY: all install clean
