@@ -12,9 +12,11 @@ The `bro-volume` CLI program, as a bash script, is part of the Brothaman scripts
 * The `bro-volume` script supports the following command line options:
   * `--name NAME`: The name of the volume (ZFS dataset name) required.
   * `--mount-point PATH`: The mount point for the volume defaults to `/var/lib/containers/unprivileged/USERNAME/volumes/NAME` where USERNAME is the owner user.
-  * `--container CONTAINER_NAME`: The name of the container quadlet that will use this volume (optional), adds a PartOf= directive to the volume quadlet.
+  * `--container CONTAINER_NAME`: The name of the container quadlet that will use this volume (optional), adds a PartOf= directive to the volume quadlet and integrates the volume into the container quadlet.
+  * `--container-path PATH`: The container mount path where the volume will be mounted inside the container (required when `--container` is used).
   * `--pre_snapshots RETENTION`: The number of ZFS 'pre_' start snapshots to retrain for the volume (ZFS dataset), default is 5, set to 0 to disable.
   * `--owner USERNAME`: The owner of the volume (unprivileged user account required).
+  * `--remove`: Remove the specified volume, including its ZFS dataset, quadlet file, zfs-helper policy entries, and dependencies from container quadlets.
   * `--help`: Display help information about the script usage.
   * `--version`: Display the version of the `bro-volume` script.
 * The `bro-volume` creates a `<NAME>.volume` quadlet for the specified unprivileged user in the appropriate XDG path: `~/.config/containers/systemd/<NAME>.volume`. The created volume quadlet contains the necessary configuration to use the created and prepared ZFS dataset as a Podman volume.
@@ -27,6 +29,11 @@ The `bro-volume` CLI program, as a bash script, is part of the Brothaman scripts
   * `ExecStartPre=`: Multiple used to prepare the volume for use by ensuring the mount point data set exists, creates it if necessary, and sets the correct ownership and permissions all using zfs-helperctl. Even takes the pre_snapshots argument into account. See how all this is done in the `3. volumes.md` lab. Must make sure to take specifier expansion and special characters into account. Look at examples in the lab where we escaped the `%` with `%%` and the `$` with `$$`.
   * `ExecStart=`: Mounts the ZFS dataset at the specified mount point.
   * `ExecStop=`: Unmounts the ZFS dataset when the volume is no longer needed.
+* When the `--container` and `--container-path` options are provided, the `bro-volume` script automatically modifies the existing container quadlet to integrate the volume:
+  * Adds systemd service dependencies (`PropagatesStopTo=`, `BindsTo=`, and `After=`) in the `[Unit]` section to properly link the volume service lifecycle with the container service.
+  * Adds a `Volume=` directive in the `[Container]` section with the format `MOUNT_POINT:CONTAINER_PATH` to bind mount the ZFS dataset into the container at the specified path.
+  * Removes any existing volume-related dependencies and volume mounts to the same container path to prevent conflicts.
+  * Uses the correct systemd service naming convention where a volume quadlet named `NAME.volume` becomes the service `NAME-volume.service`.
 * If the path `/var/lib/containers/unprivileged` exists, the `bro-volume` script creates a new user account under this base directory for unprivileged Podman containers by delegating user creation to the `bro-user` script if the specified owner user does not already exist.
   * If the path does not exist, it fails with an error.
 * The `bro-volume` script can be extended in the future to support additional features as needed.
@@ -35,5 +42,19 @@ The `bro-volume` CLI program, as a bash script, is part of the Brothaman scripts
 * The `bro-volume` script is maintained as part of the Brothaman scripts package and should be kept up to date with the latest features and security patches.
 * The `bro-volume` script ensures that the created ZFS dataset has delegated permissions for the specified unprivileged user to manage the dataset without requiring root privileges. This is done by setting the appropriate unit.list and operational allow list files with entries for the zfs-helper in the /etc/zfs-helper/policy.d/<username> directories.
 * The `bro-volume` script verifies that the specified unprivileged user has the necessary permissions to use the created ZFS dataset as a Podman volume.
-* The `bro-volume` script provides error handling and validation for the command line arguments to ensure that the specified parameters are valid and that the ZFS dataset can be created successfully.
+* The `bro-volume` script provides error handling and validation for the command line arguments to ensure that the specified parameters are valid and that the ZFS dataset can be created successfully. This includes:
+  * Requiring `--container-path` when `--container` is specified to ensure explicit container mount path specification.
+  * Preventing use of `--container-path` without `--container` to maintain logical argument relationships.
+  * Validating format and characters in volume names, owner usernames, and container names using regular expressions.
+  * Ensuring retention values are non-negative integers.
+  * Checking for existing volumes (ZFS dataset or quadlet file) and requiring explicit removal with `--remove` before recreating.
+  * Restricting `--remove` mode to only accept `--name` and `--owner` parameters for safety.
+* The `bro-volume` script supports any type of container by requiring explicit specification of the container mount path via `--container-path`, removing previous hardcoded assumptions about specific container types (e.g., PostgreSQL).
+* When using `--remove`, the script performs comprehensive cleanup including:
+  * Stopping the volume systemd service if running.
+  * Removing the volume quadlet file.
+  * Surgically removing only the specific volume's dependencies from all container quadlets that reference it, preserving other volumes.
+  * Destroying the ZFS dataset and all its snapshots.
+  * Cleaning up zfs-helper policy entries for the volume service and dataset (only if no other volumes use the same dataset).
+* The removal process is designed to be safe and only affect the specified volume, leaving other volumes and their dependencies intact.
 * The `bro-volume` script is intended to be used in conjunction with the `bro-user` script to create a complete environment for running unprivileged rootless Podman containers with ZFS backed volumes.

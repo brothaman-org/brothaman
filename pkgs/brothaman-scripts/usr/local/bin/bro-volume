@@ -28,20 +28,25 @@ DEFAULT_RETENTION=5
 NAME=""
 MOUNT_POINT=""
 CONTAINER_NAME=""
+CONTAINER_PATH=""
 OWNER=""
 RETENTION="${DEFAULT_RETENTION}"
+REMOVE="false"
 
 usage() {
   cat <<'EOF'
 Usage:
   bro-volume --name NAME --owner USERNAME [options]
+  bro-volume --remove --name NAME --owner USERNAME
 
 Options:
   --name NAME                 ZFS volume/dataset name (required)
   --owner USERNAME            Unprivileged account that owns the volume (required)
   --mount-point PATH          Mount point for the dataset (defaults to /var/lib/containers/unprivileged/OWNER/volumes/NAME)
   --container CONTAINER_NAME  Container unit that consumes the volume (adds PartOf=)
+  --container-path PATH       Container mount path (required when --container is used)
   --pre_snapshots NUM         Retention count for pre_ snapshots (default 5, 0 disables)
+  --remove                    Remove the specified volume and clean up dependencies
   --help                      Show this help text
   --version                   Display bro-volume version
 EOF
@@ -58,7 +63,9 @@ parse_args() {
       --owner) shift; OWNER="${1:-}";;
       --mount-point) shift; MOUNT_POINT="${1:-}";;
       --container) shift; CONTAINER_NAME="${1:-}";;
+      --container-path) shift; CONTAINER_PATH="${1:-}";;
       --pre_snapshots) shift; RETENTION="${1:-}";;
+      --remove) REMOVE="true";;
       --help) usage; exit 0;;
       --version) print_version; exit 0;;
       -*)
@@ -86,9 +93,28 @@ parse_args() {
     exit 2
   fi
 
-  if ! [[ "${RETENTION}" =~ ^[0-9]+$ ]]; then
-    bro_error "--pre_snapshots must be a non-negative integer"
-    exit 2
+  # Validation for remove mode
+  if [[ "${REMOVE}" == "true" ]]; then
+    if [[ -n "${CONTAINER_NAME}" || -n "${CONTAINER_PATH}" || -n "${MOUNT_POINT}" || "${RETENTION}" != "${DEFAULT_RETENTION}" ]]; then
+      bro_error "--remove can only be used with --name and --owner"
+      exit 2
+    fi
+  else
+    # Validation for create mode
+    if [[ -n "${CONTAINER_NAME}" && -z "${CONTAINER_PATH}" ]]; then
+      bro_error "--container-path is required when --container is used"
+      exit 2
+    fi
+
+    if [[ -z "${CONTAINER_NAME}" && -n "${CONTAINER_PATH}" ]]; then
+      bro_error "--container-path can only be used with --container"
+      exit 2
+    fi
+
+    if ! [[ "${RETENTION}" =~ ^[0-9]+$ ]]; then
+      bro_error "--pre_snapshots must be a non-negative integer"
+      exit 2
+    fi
   fi
 }
 
@@ -232,6 +258,87 @@ container_service_name() {
   fi
 }
 
+update_container_quadlet() {
+  if [[ -z "${CONTAINER_NAME}" ]]; then
+    return
+  fi
+
+  local container_quadlet="${OWNER_HOME}/.config/containers/systemd/${CONTAINER_NAME}.container"
+  if [[ ! -f "${container_quadlet}" ]]; then
+    bro_warn "Container quadlet ${container_quadlet} not found, skipping container update"
+    return
+  fi
+
+  local volume_service="${NAME}-volume.service"
+  
+  # Use the provided container path for the volume mount
+  local volume_mount="${MOUNT_POINT}:${CONTAINER_PATH}"
+  
+  # Create a temporary file for the updated quadlet
+  local temp_file
+  temp_file=$(mktemp)
+  local in_unit_section=false
+  local in_container_section=false
+  local unit_deps_added=false
+  local volume_added=false
+  
+  while IFS= read -r line; do
+    case "$line" in
+      "[Unit]")
+        echo "$line"
+        in_unit_section=true
+        in_container_section=false
+        ;;
+      "[Container]")
+        # Add unit dependencies before leaving [Unit] section
+        if [[ "$in_unit_section" == true && "$unit_deps_added" == false ]]; then
+          echo "PropagatesStopTo=${volume_service}"
+          echo "BindsTo=${volume_service}"  
+          echo "After=${volume_service}"
+          echo ""
+          unit_deps_added=true
+        fi
+        echo "$line"
+        in_unit_section=false
+        in_container_section=true
+        ;;
+      "[Service]"|"[Install]")
+        # Add volume before leaving [Container] section
+        if [[ "$in_container_section" == true && "$volume_added" == false ]]; then
+          echo "Volume=${volume_mount}"
+          volume_added=true
+        fi
+        echo ""
+        echo "$line"
+        in_unit_section=false
+        in_container_section=false
+        ;;
+      "PropagatesStopTo=${volume_service}"|"BindsTo=${volume_service}"|"After=${volume_service}")
+        # Skip existing dependencies for THIS specific volume service (will be re-added)
+        continue
+        ;;
+      "Volume="*":${CONTAINER_PATH}")
+        # Skip existing volume mounts to this specific container path (will be re-added)
+        continue
+        ;;
+      *)
+        echo "$line"
+        ;;
+    esac
+  done < "${container_quadlet}" > "${temp_file}"
+  
+  # Handle case where file doesn't end with [Service] or [Install]
+  if [[ "$in_container_section" == true && "$volume_added" == false ]]; then
+    echo "Volume=${volume_mount}" >> "${temp_file}"
+  fi
+  
+  # Replace the original file
+  mv "${temp_file}" "${container_quadlet}"
+  chown "${OWNER_UID}:${OWNER_GID}" "${container_quadlet}"
+  
+  bro_info "Updated container quadlet: ${container_quadlet}"
+}
+
 generate_quadlet() {
   local config_dir="${OWNER_HOME}/.config/containers/systemd"
   install -d -m 0750 -o "${OWNER_UID}" -g "${OWNER_GID}" "${config_dir}"
@@ -245,7 +352,8 @@ generate_quadlet() {
   local zfs_bin="${ZFS_BIN}"
   local zfs_helper="${ZFS_HELPERCTL_BIN}"
 
-  cat > "${quadlet_path}" <<EOF
+  # Create the quadlet content with proper variable substitution
+  cat > "${quadlet_path}" << EOF
 [Unit]
 Description=${NAME} ZFS Volume for ${OWNER}
 Wants=zfs-mount.service
@@ -258,16 +366,9 @@ VolumeName=${NAME}
 [Service]
 Environment=MOUNT_POINT=${MOUNT_POINT}
 Environment=VOLUME_DATASET=${VOLUME_DATASET}
-Environment=OWNER_USER=${OWNER}
-Environment=OWNER_UID=${OWNER_UID}
-Environment=OWNER_GID=${OWNER_GID}
 Environment=KEEP_SNAPSHOTS=${RETENTION}
-ExecStartPre=/bin/sh -c 'install -d -m 0750 "$${MOUNT_POINT}"'
-ExecStartPre=/bin/sh -c 'chown "$${OWNER_UID}:$${OWNER_GID}" "$${MOUNT_POINT}"'
-ExecStartPre=/bin/sh -c 'if [ "$${KEEP_SNAPSHOTS}" -gt 0 ]; then ${zfs_helper} snapshot "$${VOLUME_DATASET}@pre_$$(date +%%Y%%m%%d%%H%%M%%S)"; fi'
-ExecStartPre=/bin/sh -c 'if [ "$${KEEP_SNAPSHOTS}" -gt 0 ]; then ${zfs_bin} list -t snapshot -o name -s creation | grep -E "^$${VOLUME_DATASET}@pre_" | head -n -$${KEEP_SNAPSHOTS} | xargs -r -n1 ${zfs_helper} destroy; fi'
-ExecStart=${zfs_helper} mount "$${VOLUME_DATASET}"
-ExecStop=${zfs_helper} unmount "$${VOLUME_DATASET}"
+ExecStartPre=/bin/sh -c 'if [ "\$\${KEEP_SNAPSHOTS}" -gt 0 ]; then ${zfs_helper} snapshot "\$\${VOLUME_DATASET}@pre_\$\$(date +%%Y%%m%%d%%H%%M%%S)"; fi'
+ExecStartPre=/bin/sh -c 'if [ "\$\${KEEP_SNAPSHOTS}" -gt 0 ]; then ${zfs_bin} list -t snapshot -o name -s creation | grep -E "^\$\${VOLUME_DATASET}@pre_" | head -n -\$\${KEEP_SNAPSHOTS} | xargs -r -n1 ${zfs_helper} destroy; fi'
 
 [Install]
 WantedBy=default.target
@@ -277,20 +378,163 @@ EOF
   chmod 0640 "${quadlet_path}"
 }
 
+check_volume_exists() {
+  local volume_quadlet="${OWNER_HOME}/.config/containers/systemd/${NAME}.volume"
+  local dataset_exists=false
+  
+  if zfs list "${VOLUME_DATASET}" >/dev/null 2>&1; then
+    dataset_exists=true
+  fi
+  
+  if [[ -f "${volume_quadlet}" ]] || [[ "${dataset_exists}" == "true" ]]; then
+    bro_error "Volume '${NAME}' already exists for user '${OWNER}'."
+    bro_error "Use --remove to delete the existing volume first:"
+    bro_error "  bro-volume --remove --name ${NAME} --owner ${OWNER}"
+    exit 2
+  fi
+}
+
+remove_volume() {
+  local volume_quadlet="${OWNER_HOME}/.config/containers/systemd/${NAME}.volume"
+  local volume_service="${NAME}-volume.service"
+  
+  bro_info "Removing volume '${NAME}' for user '${OWNER}'..."
+  
+  # Stop the volume service if it's running
+  if sudo -u "${OWNER}" systemctl --user is-active "${volume_service}" >/dev/null 2>&1; then
+    bro_info "Stopping volume service ${volume_service}..."
+    sudo -u "${OWNER}" systemctl --user stop "${volume_service}" || true
+  fi
+  
+  # Remove the volume quadlet
+  if [[ -f "${volume_quadlet}" ]]; then
+    rm -f "${volume_quadlet}"
+    bro_info "Removed quadlet: ${volume_quadlet}"
+  fi
+  
+  # Remove dependencies from all container quadlets
+  remove_volume_dependencies_from_containers
+  
+  # Destroy the ZFS dataset if it exists
+  if zfs list "${VOLUME_DATASET}" >/dev/null 2>&1; then
+    zfs destroy -r "${VOLUME_DATASET}" || {
+      bro_warn "Failed to destroy ZFS dataset '${VOLUME_DATASET}'. You may need to destroy it manually."
+    }
+    bro_info "Destroyed ZFS dataset: ${VOLUME_DATASET}"
+  fi
+  
+  # Remove zfs-helper policy entries
+  remove_zfs_helper_policy
+  
+  bro_info "Volume '${NAME}' removed successfully."
+}
+
+remove_volume_dependencies_from_containers() {
+  local volume_service="${NAME}-volume.service"
+  local containers_dir="${OWNER_HOME}/.config/containers/systemd"
+  
+  if [[ ! -d "${containers_dir}" ]]; then
+    return
+  fi
+  
+  # Find all container quadlets that reference this volume service
+  for container_file in "${containers_dir}"/*.container; do
+    [[ -f "${container_file}" ]] || continue
+    
+    if grep -q "${volume_service}" "${container_file}" 2>/dev/null; then
+      bro_info "Removing volume dependencies from $(basename "${container_file}")"
+      remove_volume_from_container_quadlet "${container_file}"
+    fi
+  done
+}
+
+remove_volume_from_container_quadlet() {
+  local container_quadlet="$1"
+  local volume_service="${NAME}-volume.service"
+  local temp_file
+  temp_file=$(mktemp)
+  
+  while IFS= read -r line; do
+    case "$line" in
+      "PropagatesStopTo=${volume_service}"|"BindsTo=${volume_service}"|"After=${volume_service}")
+        # Skip these specific volume service dependencies
+        continue
+        ;;
+      "Volume="*":${MOUNT_POINT}"*)
+        # Skip volume mounts from this mount point
+        continue
+        ;;
+      *)
+        echo "$line"
+        ;;
+    esac
+  done < "${container_quadlet}" > "${temp_file}"
+  
+  mv "${temp_file}" "${container_quadlet}"
+  bro_debug "Removed volume dependencies from: ${container_quadlet}"
+}
+
+remove_zfs_helper_policy() {
+  local policy_dir="${POLICY_BASE}/${OWNER}"
+  local volume_service="${NAME}-volume.service"
+  
+  if [[ ! -d "${policy_dir}" ]]; then
+    return
+  fi
+  
+  # Remove the volume service from units.list
+  local units_file="${policy_dir}/units.list"
+  if [[ -f "${units_file}" ]]; then
+    sed -i "/^${volume_service}$/d" "${units_file}"
+    bro_debug "Removed ${volume_service} from ${units_file}"
+  fi
+  
+  # Remove dataset entries from operation lists if no other volumes use the same dataset
+  local dataset_in_use=false
+  if [[ -f "${units_file}" ]]; then
+    for service in $(grep ".*-volume\.service$" "${units_file}" 2>/dev/null || true); do
+      if [[ "${service}" != "${volume_service}" ]]; then
+        dataset_in_use=true
+        break
+      fi
+    done
+  fi
+  
+  if [[ "${dataset_in_use}" == "false" ]]; then
+    for op_file in "${policy_dir}"/*.list; do
+      [[ -f "${op_file}" ]] || continue
+      [[ "$(basename "${op_file}")" != "units.list" ]] || continue
+      
+      sed -i "/^${OWNER} ${VOLUME_DATASET}$/d" "${op_file}" 2>/dev/null || true
+      bro_debug "Removed dataset entry from $(basename "${op_file}")"
+    done
+  fi
+}
+
 main() {
   bro_require_root
   parse_args "$@"
   require_dependencies
   ensure_owner_account
   resolve_paths
-  create_dataset
-  configure_zfs_helper_policy
-  generate_quadlet
+  
+  if [[ "${REMOVE}" == "true" ]]; then
+    remove_volume
+  else
+    check_volume_exists
+    create_dataset
+    configure_zfs_helper_policy
+    generate_quadlet
+    update_container_quadlet
 
-  bro_info "Volume '${NAME}' configured for user '${OWNER}'."
-  bro_info "Dataset: ${VOLUME_DATASET}"
-  bro_info "Mount point: ${MOUNT_POINT}"
-  bro_info "Quadlet: ${OWNER_HOME}/.config/containers/systemd/${NAME}.volume"
+    bro_info "Volume '${NAME}' configured for user '${OWNER}'."
+    bro_info "Dataset: ${VOLUME_DATASET}"
+    bro_info "Mount point: ${MOUNT_POINT}"
+    bro_info "Quadlet: ${OWNER_HOME}/.config/containers/systemd/${NAME}.volume"
+    if [[ -n "${CONTAINER_NAME}" ]]; then
+      bro_info "Updated container: ${OWNER_HOME}/.config/containers/systemd/${CONTAINER_NAME}.container"
+    fi
+  fi
 }
 
 main "$@"

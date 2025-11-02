@@ -205,7 +205,7 @@ prepare_user_dataset() {
   DATASET_CREATED=1
 }
 
-delegate_zfs_mount() {
+delegate_zfs_perms() {
   if ! command -v zfs >/dev/null 2>&1; then
     return
   fi
@@ -462,7 +462,7 @@ create_user_flow() {
   create_required_directories
   write_containers_conf
   write_storage_conf
-  delegate_zfs_mount
+  # delegate_zfs_perms
   configure_subids
   enable_lingering
 
