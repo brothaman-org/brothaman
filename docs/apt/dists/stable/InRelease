@@ -1,3 +1,6 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
+
 Origin: workspace
 Label: Brothaman APT Repository
 Suite: stable
@@ -37,3 +40,20 @@ SHA256:
  98cabf1cfd73bdefe462d0d3e7b42e16a27cf3f10f8e6f851bf4ec8da550ca63      29 main/binary-arm64/Packages.gz
  d3dda84eb03b9738d118eb2be78e246106900493c0ae07819ad60815134a8058      14 main/binary-arm64/Packages.bz2
  e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855       0 main/binary-arm64/Packages
+
+-----BEGIN PGP SIGNATURE-----
+
+iQIzBAEBCAAdFiEEtpeHJeDXXEbjLS+uGNMzDP7o+mEFAmkHWzQACgkQGNMzDP7o
++mHxmRAAhMeB3C/n+U0J4O/sUWZwkUd+X5Pg1ynr4EiSJ0RUAifuM5SlWd+7JeNx
+h5vQh2s4+cHURdHFGo3R2KfhFVuls5e5lPI6+AZyY6M8g1L7KMUSKXnXDLnIlpYV
++Ug0nq90KgjN4oq9ME+3ddvGJwU0Sn8rr3jS8mN9Idgrvn5nlErNjZ7NJyei8oyH
+s0rDfvocgbs816aoeeEUpjbd/6nYDy3SNFGQ0hgza/vKAu7xJ2MKSfiZAuVc0qlt
+bD/9WEJ5scB61PtyHcLwSufvXcRxSdDzXmc+mBQoBWkcReNqWqMSAcjLc7TPh6RS
+W+rJmltBMV92kE/nw8NeXl1trnYQxxaUE8k2wyn2rSJd9EyEpIpc3LXblc49PvK2
+j9caInYwfzy5r498Iu/69xhziL9lg2xTGIxTDOEC2C8ANnzN+ObGQ2PoBelRaj03
+1QwnpCiCNM5nprMXl1z3G20zAY5LqQZIEytxt5J7dLBmyl1hlzMgMXMF8tiUndm2
+g9AMZOouqNUZTGd9NdIrcm04CgG8ixvzoocayI8SGfSI3g1xEZHx7HN+9d2VU4K4
+nfLhyPK69nPRyyIMPkImUSu5yGwnAYL5Yel2fndwGqHSVtQ37x0hUJW/Ow4Yb7X6
+8D8eBHW+8eLWUiiD/CokzatvtCU+e4sdTkcENhhSdQijhNZpzJ8=
+=eaLt
+-----END PGP SIGNATURE-----

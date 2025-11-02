@@ -1648,7 +1648,6 @@ ContainerName=test-quadlet
 PublishPort=8080:80
 Volume=/brothaman:/var/www/brothaman
 Volume=/home/lingeruser/nginx-conf.d:/etc/nginx/conf.d
-UserNS=keep-id
 
 [Service]
 Restart=always
@@ -1897,7 +1896,6 @@ ContainerName=test-postgresql
 Environment=POSTGRES_PASSWORD=password
 Volume=/home/lingeruser/postgres:/var/lib/postgresql/data
 PublishPort=5432:5432
-UserNS=keep-id
 
 [Service]
 Restart=always
@@ -2013,7 +2011,6 @@ Image=docker.io/library/postgres:16
 ContainerName=postgresql
 Environment=POSTGRES_PASSWORD=password
 # Volume=/var/lib/containers/unprivileged/postgres/volumes/postgresql:/var/lib/postgresql/data
-UserNS=keep-id
 
 [Service]
 Restart=always

@@ -1594,7 +1594,8 @@
 <p>Before creating the socket unit, we need to create the corresponding service unit that will be activated when a connection is made to the socket.</p>
 <p>When this service unit is activated it activates the <code>test-postgresql.service</code> quadlet if it is not already running. Once the container is running, the service unit retrieves the container's PID using <code>podman inspect</code> and then starts <code>systemd-socket-proxyd</code> inside the container's network namespace using <code>bro-helper</code>.</p>
 <p>In a <code>lingeruser</code> shell, a new file named <code>postgresql-activator.service</code> is created in the systemd user directory with the following content:</p>
-<pre><code class="language-bash">mkdir -p ~/.config/systemd/user/
+<pre><code class="language-bash">systemctl --user disable postgresql-activator.service
+mkdir -p ~/.config/systemd/user/
 cat &lt;&lt;EOF &gt; ~/.config/systemd/user/postgresql-activator.service
 [Unit]
 Description=PostgreSQL Activator Service
@@ -1610,10 +1611,6 @@ ExecStartPre=/usr/bin/env sh -c &quot;/usr/bin/podman inspect -f 'TARGET_PID={{.
 # Environment variable file for the proxy helper does not have to exist with the dash
 EnvironmentFile=-%t/postgresql-proxyd.env
 
-# Demonstrates proper in namespace execution of bro-helper by gathering network info
-ExecStartPre=/usr/bin/env sh -c &quot;/usr/local/bin/bro-helper --pid \${TARGET_PID} -- ip -o addr&quot;
-ExecStartPre=/usr/bin/env sh -c &quot;/usr/local/bin/bro-helper --pid \${TARGET_PID} -- netstat -tlpn&quot;
-
 # Wait until Postgres is accepting connections inside its netns
 ExecStartPre=/usr/bin/env sh -c &quot;i=0; while [ \$i -lt 20 ]; do \
   /usr/bin/podman unshare nsenter -t \&quot;\$TARGET_PID\&quot; -n \
@@ -1621,9 +1618,10 @@ ExecStartPre=/usr/bin/env sh -c &quot;i=0; while [ \$i -lt 20 ]; do \
   i=\$((i+1)); sleep 1; \
 done; exit 1&quot;
 
-# Key is the use of exec to replace the shell with the proxyd process
-# Hands off the listening socket to systemd-socket-proxyd as desired
-ExecStart=/usr/bin/env sh -c 'exec /usr/local/bin/bro-helper --pid &quot;\${TARGET_PID}&quot; -- /lib/systemd/systemd-socket-proxyd 127.0.0.1:5432'
+
+# Key is the use of exec to replace the shell with podman process
+# Use podman unshare to enter user namespace, then bro-helper for network namespace
+ExecStart=/usr/bin/env sh -c 'exec podman unshare /usr/local/bin/bro-helper --pid &quot;${TARGET_PID}&quot; -- /lib/systemd/systemd-socket-proxyd 127.0.0.1:5432'
 
 NoNewPrivileges=no
 PrivateTmp=yes
@@ -1639,6 +1637,7 @@ WantedBy=default.target
 EOF
 
 systemctl --user daemon-reload
+systemctl --user restart postgresql-activator.socket
 systemctl --user enable postgresql-activator.service
 </code></pre>
 <p>Let's break down each of the significant directives in this service unit:</p>
@@ -1702,7 +1701,6 @@ ContainerName=test-postgresql
 Environment=POSTGRES_PASSWORD=password
 Volume=/home/lingeruser/postgres:/var/lib/postgresql/data
 Network=none
-UserNS=keep-id
 
 [Service]
 Restart=always
