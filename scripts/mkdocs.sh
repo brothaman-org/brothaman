@@ -32,16 +32,26 @@ echo "📦 Checking MkDocs installation..."
 # Check if mkdocs is available in PATH or in our virtual environment
 VENV_DIR="$HOME/.local/mkdocs-venv"
 MKDOCS_CMD="mkdocs"
+REQUIREMENTS_HASH_FILE="$VENV_DIR/.requirements_hash"
 
-if [[ -f "$VENV_DIR/bin/mkdocs" ]]; then
-    # Use virtual environment mkdocs
-    MKDOCS_CMD="$VENV_DIR/bin/mkdocs"
-    echo "✅ Found MkDocs in virtual environment"
-elif command -v mkdocs &> /dev/null; then
-    # Use system mkdocs
-    echo "✅ Found MkDocs in system PATH"
-else
-    echo "Installing MkDocs and dependencies in virtual environment..."
+# Define required packages
+REQUIRED_PACKAGES=(
+    "mkdocs"
+    "mkdocs-material"
+    "pymdown-extensions" 
+    "mkdocs-section-index"
+    "mkdocs-minify-plugin"
+    "mkdocs-redirects"
+    "mkdocs-git-revision-date-localized-plugin"
+    "mkdocs-awesome-pages-plugin"
+)
+
+# Create a hash of our requirements to detect changes
+CURRENT_HASH=$(printf '%s\n' "${REQUIRED_PACKAGES[@]}" | sha256sum | cut -d' ' -f1)
+
+# Function to install or update packages
+install_mkdocs() {
+    echo "📦 Installing MkDocs and dependencies in virtual environment..."
     
     # Create virtual environment if it doesn't exist
     if [[ ! -d "$VENV_DIR" ]]; then
@@ -51,12 +61,39 @@ else
     
     # Install packages in virtual environment
     "$VENV_DIR/bin/pip" install --upgrade pip
-    "$VENV_DIR/bin/pip" install mkdocs mkdocs-material pymdown-extensions
+    "$VENV_DIR/bin/pip" install "${REQUIRED_PACKAGES[@]}"
     
-    # Set mkdocs command to use virtual environment
-    MKDOCS_CMD="$VENV_DIR/bin/mkdocs"
+    # Save the hash to track installed packages
+    echo "$CURRENT_HASH" > "$REQUIREMENTS_HASH_FILE"
     
     echo "✅ MkDocs installed successfully in virtual environment"
+}
+
+# Check if we have a valid installation
+if [[ -f "$VENV_DIR/bin/mkdocs" ]]; then
+    # Check if packages are up to date
+    if [[ -f "$REQUIREMENTS_HASH_FILE" ]]; then
+        INSTALLED_HASH=$(cat "$REQUIREMENTS_HASH_FILE")
+        if [[ "$INSTALLED_HASH" == "$CURRENT_HASH" ]]; then
+            echo "✅ Found cached MkDocs installation (up to date)"
+            MKDOCS_CMD="$VENV_DIR/bin/mkdocs"
+        else
+            echo "🔄 Package list changed, updating installation..."
+            install_mkdocs
+            MKDOCS_CMD="$VENV_DIR/bin/mkdocs"
+        fi
+    else
+        echo "🔄 No cache marker found, updating installation..."
+        install_mkdocs
+        MKDOCS_CMD="$VENV_DIR/bin/mkdocs"
+    fi
+elif command -v mkdocs &> /dev/null; then
+    # Use system mkdocs
+    echo "✅ Found MkDocs in system PATH"
+else
+    # No installation found, install fresh
+    install_mkdocs
+    MKDOCS_CMD="$VENV_DIR/bin/mkdocs"
 fi
 
 # Clean existing docs directory (but preserve apt/ subdirectory if it exists)

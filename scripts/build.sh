@@ -10,11 +10,42 @@ WORKSPACE_ROOT="$(dirname "$SCRIPT_DIR")"
 echo "🚀 Starting GH-Repos build process..."
 echo "════════════════════════════════════"
 
+# Function to check cache status
+check_cache_status() {
+    echo "📊 Cache Status Check:"
+    
+    # Check MkDocs venv cache
+    VENV_DIR="$HOME/.local/mkdocs-venv"
+    if [[ -f "$VENV_DIR/bin/mkdocs" && -f "$VENV_DIR/.requirements_hash" ]]; then
+        echo "   ✅ MkDocs virtual environment cached"
+    else
+        echo "   🔄 MkDocs virtual environment will be created"
+    fi
+    
+    # Check container image cache (only when running on host)
+    if [[ -z "${REMOTE_CONTAINERS:-}" && -z "${CODESPACES:-}" && ! -f "/.dockerenv" ]]; then
+        if command -v docker &> /dev/null; then
+            if docker images gh-repos-build --format "table {{.Repository}}" | grep -q gh-repos-build; then
+                echo "   ✅ Container image cached"
+            else
+                echo "   🔄 Container image will be built"
+            fi
+        fi
+    fi
+    
+    echo ""
+}
+
+# Show cache status first
+check_cache_status
+
+# Git configuration removed - not needed without git-revision-date plugin
+
 # Fix common permission issues when running in container
 if [[ "${REMOTE_CONTAINERS:-}" == "true" ]] || [[ "${CODESPACES:-}" == "true" ]] || [[ -f "/.dockerenv" ]]; then
     echo "🔧 Ensuring proper permissions..."
     # Fix ownership of workspace files
-    sudo chown -R $(id -u):$(id -g) "$WORKSPACE_ROOT" 2>/dev/null || true
+    sudo chown -R "$(id -u):$(id -g)" "$WORKSPACE_ROOT" 2>/dev/null || true
     # Ensure we can write to key directories
     sudo chmod -R u+w "$WORKSPACE_ROOT" 2>/dev/null || true
 fi
@@ -35,15 +66,35 @@ else
     
     # Check if dev container image exists or build it
     IMAGE_NAME="gh-repos-build"
-    if ! docker image inspect "$IMAGE_NAME" &> /dev/null; then
-        echo "🔨 Building dev container image..."
-        if [[ -f "$WORKSPACE_ROOT/.devcontainer/Dockerfile" ]]; then
-            docker build -t "$IMAGE_NAME" "$WORKSPACE_ROOT/.devcontainer/"
+    DOCKERFILE_PATH="$WORKSPACE_ROOT/.devcontainer/Dockerfile"
+    DEVCONTAINER_JSON="$WORKSPACE_ROOT/.devcontainer/devcontainer.json"
+    
+    # Create hash of devcontainer files to detect changes
+    if [[ -f "$DOCKERFILE_PATH" ]] && [[ -f "$DEVCONTAINER_JSON" ]]; then
+        DEVCONTAINER_HASH=$(cat "$DOCKERFILE_PATH" "$DEVCONTAINER_JSON" | sha256sum | cut -d' ' -f1)
+        EXPECTED_TAG="$IMAGE_NAME:$DEVCONTAINER_HASH"
+        
+        # Check if we have the exact image we need
+        if docker image inspect "$EXPECTED_TAG" &> /dev/null; then
+            echo "✅ Found cached container image ($EXPECTED_TAG)"
+            IMAGE_NAME="$EXPECTED_TAG"
         else
-            echo "❌ Error: .devcontainer/Dockerfile not found"
-            echo "💡 Please set up the dev container or run inside VS Code dev container"
-            exit 1
+            echo "🔨 Building dev container image (configuration changed)..."
+            
+            # Remove old images to save space
+            docker images "$IMAGE_NAME" --format "table {{.Repository}}:{{.Tag}}" | grep -v REPOSITORY | xargs -r docker rmi 2>/dev/null || true
+            
+            # Build new image with hash tag
+            docker build -t "$EXPECTED_TAG" "$WORKSPACE_ROOT/.devcontainer/"
+            docker tag "$EXPECTED_TAG" "$IMAGE_NAME"  # Also tag as latest for compatibility
+            IMAGE_NAME="$EXPECTED_TAG"
+            
+            echo "✅ Container image built and cached"
         fi
+    else
+        echo "❌ Error: .devcontainer/Dockerfile or devcontainer.json not found"
+        echo "💡 Please set up the dev container or run inside VS Code dev container"
+        exit 1
     fi
     
     # Set up container command
