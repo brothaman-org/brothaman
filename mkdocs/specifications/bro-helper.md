@@ -24,55 +24,47 @@ Using them together now doubles the proxied traffic overhead which adds latency 
 
 ## Security Restrictions
 
-The `bro-helper` is a tiny c-program with slightly augmented capabilities allowing it to set the netns and spawns commands within it. It can exec `systemd-socket-proxyd`, `ip`, and `netstat` commands only. Furthermore, it only works on containers running as the invoking user.
+The `bro-helper` is a tiny c-program that uses file capabilities to enter network namespaces. It takes a container PID, joins its network namespace, and executes any command within that namespace. It works with containers running as the invoking user and preserves socket file descriptors for systemd socket activation.
 
 Least privilege is achieved by using a very narrow capability addition while using that capability in highly specific situations. Meanwhile we do not fork and honor the passed host file descriptors (listener socket) so are handed off to `systemd-socket-proxyd` running in the container.
 
 * Find the netns you want (e.g., /proc/${PID}/ns/net),
 * Join it with setns(fd, CLONE_NEWNET),
-* Drop any capabilities it no longer needs,
 * Exec the target process.
 
 That's it—no daemons, no forking trees, just a short, auditable path.
 
-Two layers work together to maintain least privilege:
+The security model is simple and effective:
 
-### 1. The **unit file** constrains what the process can ever have
+### File-based capability assignment
 
-* `CapabilityBoundingSet=CAP_SYS_ADMIN CAP_NET_ADMIN`  
-    → _Even if_ the binary tried, it **cannot** gain caps outside this set.
-* `AmbientCapabilities=CAP_SYS_ADMIN CAP_NET_ADMIN` (or file caps on the binary)  
-    → Ensures the helper **starts** with just the tiny set it needs.
-* `NoNewPrivileges=no`  
-    → Required if you rely on ambient caps or file caps across `execve()`.
+The `bro-helper` binary uses file capabilities to obtain the minimal permission needed:
 
-### 2. The **program drops capabilities** as soon as it’s done with `setns()`
+* Installation sets `cap_sys_admin+ep` on the binary via `setcap`
+* This allows **any user** to run bro-helper and enter network namespaces they own
+* The capability is **effective** and **permitted**, but not **inheritable**
 
-Right after `setns()`, it **clears its capability sets** so the final `exec()`ed program runs unprivileged (or with only what you explicitly keep). Concretely:
+### What this means for security
 
-* Use **libcap** to set **effective+permitted+inheritable = empty** before `execvp()`.
-* Optionally lock things down further by dropping from the **bounding set** via `prctl(PR_CAPBSET_DROP, ...)` (irreversible for the lifetime of the process).
-* Optionally set `PR_SET_NO_NEW_PRIVS` to 1 after dropping caps.
-
-Result: the helper temporarily uses `CAP_SYS_ADMIN` to perform **one** privileged kernel call, then throws away the keys.
+* **Limited scope**: Only `CAP_SYS_ADMIN` is granted, only for network namespace entry
+* **No privilege escalation**: The executed command (like `systemd-socket-proxyd`) inherits **no special capabilities**
+* **Process isolation**: Each execution is independent with no persistent privileged daemon
 
 ## What it does (conceptually)
 
-* **Inputs:** `--pid <PID>` (or sometimes `--netns-path <path>`), `-- <cmd> [args…]`
+* **Inputs:** `--pid <PID>`, `-- <cmd> [args…]`
 * **Open the namespace:** `fd = open("/proc/PID/ns/net", O_RDONLY|O_CLOEXEC)`
 * **Join it:** `setns(fd, CLONE_NEWNET)`
-* **Harden & de-priv:**
-  * Clear dangerous env (PATH, IFS if you're paranoid), set `umask(077)`
-  * **Drop capabilities** (details below)
-  * Optionally set `prctl(PR_SET_NO_NEW_PRIVS, 1)` after dropping caps      
-* **Hand off:** `execvp("systemd-socket-proxyd", argv)`  
-    From here, _proxyd_ runs **inside** that netns, inheriting only the minimal privileges you allow.
+* **Update environment:** Set `LISTEN_PID` for socket activation if needed
+* **Hand off:** `execvp(target_command, argv)`  
+    From here, the target runs **inside** that netns with normal user privileges.
 
-## Why it needs (some) capabilities
+## Why it needs CAP_SYS_ADMIN
 
-* To call `setns(CLONE_NEWNET)` into a netns you don't “own”, the kernel requires **`CAP_SYS_ADMIN` in the owning user namespace** of that netns. We own it but are still required to have the permission.
-* You **don’t** need `CAP_NET_ADMIN` to _enter_ the netns, but tools you run **inside** (like `ip addr`) may need it to mutate interfaces. `systemd-socket-proxyd` typically doesn't need `CAP_NET_ADMIN`; it just opens sockets.
-* So: **minimum to enter** is `CAP_SYS_ADMIN`. If you _also_ run diagnostics like `ip` inside the netns, give `CAP_NET_ADMIN` too (and then drop it before you `exec proxyd` if proxyd doesn’t need it).
+* To call `setns(CLONE_NEWNET)` into a network namespace, the kernel requires **`CAP_SYS_ADMIN`**
+* The capability is set via file capabilities: `setcap cap_sys_admin+ep /usr/local/bin/bro-helper`
+* This is the **only** capability needed for network namespace entry
+* The executed program inherits **no special capabilities** - it runs with normal user privileges
 
 ## More security options for the next iteration
 
@@ -81,4 +73,4 @@ Result: the helper temporarily uses `CAP_SYS_ADMIN` to perform **one** privilege
 * **Logging**: on failure, log `errno` and the exact syscall (helps when seccomp/LSM interferes).
 * **Interface**: support `--netns-path` as an alternative to `--pid`, so you can bind a stable symlink like `/run/netns/nginx-proxyd`.
 
-This is why the approach is safe and composable: **short-lived privilege**, **immediate drop**, **tight unit caps**, and the actual worker (`systemd-socket-proxyd`) runs with **regular user privileges** in the desired netns.
+This is why the approach is safe and composable: **minimal capability scope**, **file-based permissions**, **no persistent privileges**, and the actual worker (`systemd-socket-proxyd`) runs with **regular user privileges** in the desired netns.

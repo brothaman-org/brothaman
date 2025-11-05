@@ -118,6 +118,7 @@ nav:
   
   - Reference:
     - API Specifications:
+        - bro-helper: specifications/bro-helper.md
         - bro-user: specifications/bro-user.md
         - bro-volume: specifications/bro-volume.md
         - bro-activator: specifications/bro-activator.md
