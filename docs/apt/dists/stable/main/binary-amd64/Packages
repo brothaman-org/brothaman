@@ -12,10 +12,10 @@ Description: Network namespace helper utilities for brothaman
  and bro-nsenter for entering container namespaces with FD preservation
  for systemd socket activation support.
 Filename: pool/brothaman-helper_1.0.0_amd64.deb
-Size: 274952
-MD5sum: 7192302da6b3142edad18ca954cfdb6a
-SHA1: cc894b6139d87cfe70703a404af06c1459d04693
-SHA256: 6c133b18d0757832c71e778c7210b5937e0720f6bb5d8857aebc2cf7d66ab19b
+Size: 274916
+MD5sum: 5d81cc357a857ac8a11b942399ca0f8b
+SHA1: b6af90e907a77c55aea877358a1f9840bf09bc6c
+SHA256: 8103ccf1fc4dac1840612c8b5632a0af9f8932f6731446e0a82c6a5467734cd8
 
 Package: brothaman-scripts
 Version: 1.0.0
@@ -40,8 +40,8 @@ Description: Brothaman shell script collection and shared library
  All scripts follow consistent conventions and use the shared bro-common
  library for logging, version comparison, and system utilities.
 Filename: pool/brothaman-scripts_1.0.0_all.deb
-Size: 16144
-MD5sum: dc67ce118505609e9b2472080d0dcf00
-SHA1: 82374318f0bfebe8d8941fcd33405b53f1a9869e
-SHA256: 12a02c01059f71db01251da0eca998e917470b1a38c9c76f9b3e5251b6259a2b
+Size: 16356
+MD5sum: 6fc32163491fa9e53de05faab34cf429
+SHA1: a41608366294f8b1c302726c0603e7ccf825b03f
+SHA256: 6671c16a95a8c285ce868b2801be38aa008084ef005ef453c851a4c39ec71aee
 

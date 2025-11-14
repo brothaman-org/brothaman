@@ -5,7 +5,7 @@ Brothaman consists of several key components that work together to provide secur
 ## Core Components
 
 ### Runtime & Execution
-- **[Network Helper](../bro-helper.md)** - Network namespace management and socket activation
+- **[Network Helper](../specifications/bro-helper.md)** - Network namespace management and socket activation
 - **[Container Runtime](../unprivileged-podman.md)** - Rootless Podman configuration and management
 - **[User Management](../user-scope.md)** - User session and service scope management
 

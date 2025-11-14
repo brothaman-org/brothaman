@@ -91,7 +91,7 @@ nav:
   
   - Components:
     - Overview: components/index.md
-    - Network Helper: bro-helper.md
+    - Network Helper: specifications/bro-helper.md
     - User Management: user-scope.md
     - Container Runtime: unprivileged-podman.md
     - Storage Backend: zfs.md
@@ -110,12 +110,11 @@ nav:
         - "Lab 2: Quadlet Basics": labs/2. quadlet.md
     - Storage & Persistence:
         - "Lab 3: Volumes & ZFS": labs/3. volumes.md
-        - "Lab 5: Debugging": labs/5. debugging.md
-    - Networking & Services:
+    - Applied Examples:
         - "Lab 4: Network Config": labs/4. networking.md
-        - "Lab 6: Database Admin": labs/6. pgadmin.md
-        - "Lab 7: Pod Management": labs/7. pod.md
-  
+        - "Lab 5: Real World Example": labs/5. example.md
+    # Additional labs can be appended here as they are written
+
   - Reference:
     - API Specifications:
         - bro-helper: specifications/bro-helper.md
