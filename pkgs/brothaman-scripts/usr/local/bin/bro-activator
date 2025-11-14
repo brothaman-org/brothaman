@@ -210,8 +210,78 @@ WantedBy=default.target
 EOF
 }
 
+write_helper_script() {
+  local script_path="$1"
+  local tmp
+  tmp="$(mktemp)"
+  cat <<'EOS' > "${tmp}"
+#!/usr/bin/env bash
+set -euo pipefail
+
+mode="${1:-}"
+env_file="${2:-}"
+podman_bin="${3:-}"
+bro_helper_bin="${4:-}"
+container_id="${5:-}"
+internal_host="${6:-}"
+internal_port="${7:-}"
+retry_max=30
+
+ensure_env() {
+  if [[ ! -r "${env_file}" ]]; then
+    echo "[activator] env file not found: ${env_file}" >&2
+    exit 1
+  fi
+  # shellcheck disable=SC1090
+  source "${env_file}"
+}
+
+case "${mode}" in
+  capture)
+    for _ in $(seq 1 "${retry_max}"); do
+      pid="$("${podman_bin}" inspect -f '{{.State.Pid}}' "${container_id}" 2>/dev/null || true)"
+      if [[ -n "${pid}" && "${pid}" != "0" ]]; then
+        {
+          echo "TARGET_PID=${pid}"
+          echo "TARGET_HOST=${internal_host}"
+          echo "TARGET_PORT=${internal_port}"
+        } > "${env_file}"
+        exit 0
+      fi
+      sleep 1
+    done
+    exit 1
+    ;;
+  wait)
+    ensure_env
+    readiness_cmd=$(printf 'command -v nc >/dev/null && nc -z %q %q 2>/dev/null' "${internal_host}" "${internal_port}")
+    for _ in $(seq 1 "${retry_max}"); do
+      if "${podman_bin}" unshare nsenter -t "${TARGET_PID}" -n /usr/bin/env sh -c "${readiness_cmd}"; then
+        exit 0
+      fi
+      sleep 1
+    done
+    exit 1
+    ;;
+  run)
+    ensure_env
+    exec "${podman_bin}" unshare "${bro_helper_bin}" --pid "${TARGET_PID}" -- /lib/systemd/systemd-socket-proxyd "${internal_host}:${internal_port}"
+    ;;
+  *)
+    echo "[activator] unknown mode: ${mode}" >&2
+    exit 2
+    ;;
+esac
+EOS
+  install -m 0750 "${tmp}" "${script_path}"
+  rm -f "${tmp}"
+}
+
 write_service_unit() {
   local env_file="%t/${CONTAINER_NAME}-activator.env"
+  local helper_script="${USER_SYSTEMD_DIR}/${CONTAINER_NAME}-activator-helper.sh"
+
+  write_helper_script "${helper_script}"
   cat > "${SERVICE_UNIT_PATH}" <<EOF
 [Unit]
 Description=${CONTAINER_NAME} Activator Service
@@ -221,19 +291,15 @@ After=${CONTAINER_NAME}-activator.socket ${CONTAINER_NAME}.service
 [Service]
 Type=simple
 
-# Capture the container PID for bro-helper
-ExecStartPre=/usr/bin/env sh -c 'for i in $(seq 1 30); do pid=\$(${PODMAN_BIN} inspect -f "{{.State.Pid}}" ${CONTAINER_IDENTIFIER} 2>/dev/null || true); if [ -n "\$pid" ] && [ "\$pid" != "0" ]; then echo "TARGET_PID=\${pid}" > ${env_file}; echo "TARGET_HOST=${INTERNAL_HOST}" >> ${env_file}; echo "TARGET_PORT=${INTERNAL_PORT}" >> ${env_file}; exit 0; fi; sleep 1; done; exit 1'
+# Capture the container PID for bro-helper and write environment file
+ExecStartPre=${helper_script} capture ${env_file} ${PODMAN_BIN} ${BRO_HELPER_BIN} ${CONTAINER_IDENTIFIER} ${INTERNAL_HOST} ${INTERNAL_PORT}
 
 EnvironmentFile=-${env_file}
 
-# Optional diagnostics inside the container namespace
-ExecStartPre=/usr/bin/env sh -c '${BRO_HELPER_BIN} --pid "$${TARGET_PID}" -- /usr/bin/env sh -c "command -v ip >/dev/null && ip -o addr || true"'
-ExecStartPre=/usr/bin/env sh -c '${BRO_HELPER_BIN} --pid "$${TARGET_PID}" -- /usr/bin/env sh -c "command -v ss >/dev/null && ss -ltn || command -v netstat >/dev/null && netstat -tlpn || true"'
+# Wait until the container port is available inside its network namespace
+ExecStartPre=${helper_script} wait ${env_file} ${PODMAN_BIN} ${BRO_HELPER_BIN} ${CONTAINER_IDENTIFIER} ${INTERNAL_HOST} ${INTERNAL_PORT}
 
-# Ensure the target port is accepting connections
-ExecStartPre=/usr/bin/env sh -c 'for i in $(seq 1 30); do ${BRO_HELPER_BIN} --pid "$${TARGET_PID}" -- /usr/bin/env sh -c "command -v nc >/dev/null && nc -z ${INTERNAL_HOST} ${INTERNAL_PORT} 2>/dev/null" && exit 0; sleep 1; done; exit 0'
-
-ExecStart=/usr/bin/env sh -c 'exec ${BRO_HELPER_BIN} --pid "$${TARGET_PID}" -- /lib/systemd/systemd-socket-proxyd ${INTERNAL_HOST}:${INTERNAL_PORT}'
+ExecStart=${helper_script} run ${env_file} ${PODMAN_BIN} ${BRO_HELPER_BIN} ${CONTAINER_IDENTIFIER} ${INTERNAL_HOST} ${INTERNAL_PORT}
 
 NoNewPrivileges=no
 PrivateTmp=yes
