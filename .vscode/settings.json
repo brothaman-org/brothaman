@@ -1,6 +1,7 @@
 {
   "cSpell.words": [
     "alvistack",
+    "authorised",
     "brctl",
     "Brothaman",
     "BTRFS",
@@ -12,6 +13,7 @@
     "crun",
     "dbus",
     "dearmor",
+    "dumbass",
     "Eeuo",
     "errno",
     "execve",
@@ -22,6 +24,7 @@
     "gotchyas",
     "graphroot",
     "helperctl",
+    "howerver",
     "htmlmin",
     "inetutils",
     "inlinehilite",
@@ -55,6 +58,7 @@
     "pgadmin",
     "PGPASSWORD",
     "pipefail",
+    "PKCS",
     "PKGS",
     "podlet",
     "popd",
@@ -84,11 +88,14 @@
     "tmpkey",
     "TOCTOU",
     "toighter",
+    "TOTP",
     "Traefik",
     "uidmap",
     "unallow",
     "userdel",
+    "userinfo",
     "veth",
+    "webapps",
     "zfshelper"
   ]
 }
