@@ -485,8 +485,8 @@ update_container_quadlet() {
   fi
 
   local volume_service="${NAME}-volume.service"
-  local volume_mount="${MOUNT_POINT}:${CONTAINER_PATH}"
-  local volume_quadlet_ref="${NAME}.volume"
+  local desired_volume_entry="Volume=${NAME}:${CONTAINER_PATH}"
+  local legacy_volume_entry="Volume=${NAME}.volume:${CONTAINER_PATH}"
   
   # Create a temporary file for the updated quadlet
   local temp_file
@@ -519,7 +519,7 @@ update_container_quadlet() {
       "[Service]"|"[Install]")
         # Add volume before leaving [Container] section
         if [[ "$in_container_section" == true && "$volume_added" == false ]]; then
-          echo "Volume=${volume_mount}"
+          echo "${desired_volume_entry}"
           volume_added=true
         fi
         echo ""
@@ -539,21 +539,19 @@ update_container_quadlet() {
         IFS=':' read -r entry_source entry_target entry_options <<< "${volume_entry}"
         local entry_source_base="${entry_source%.volume}"
 
-        # Keep existing references to this volume quadlet
-        if [[ "${entry_source}" == "${volume_quadlet_ref}" || "${entry_source_base}" == "${NAME}" ]]; then
-          volume_added=true
+        # Keep existing references to this volume (by name or .volume shorthand)
+        if [[ "${entry_source}" == "${NAME}" || "${entry_source_base}" == "${NAME}" ]]; then
+          if [[ "${entry_target}" == "${CONTAINER_PATH}" ]]; then
+            volume_added=true
+            echo "$line"
+            continue
+          fi
+
           echo "$line"
           continue
         fi
 
-        # Keep existing bind mounts that already match the requested host/container path
-        if [[ "${entry_source}" == "${MOUNT_POINT}" && "${entry_target}" == "${CONTAINER_PATH}" ]]; then
-          volume_added=true
-          echo "$line"
-          continue
-        fi
-
-        # Remove conflicting bind mounts targeting the same container path
+        # Remove conflicting mounts targeting the same container path
         if [[ "${entry_target}" == "${CONTAINER_PATH}" ]]; then
           continue
         fi
@@ -568,7 +566,7 @@ update_container_quadlet() {
   
   # Handle case where file doesn't end with [Service] or [Install]
   if [[ "$in_container_section" == true && "$volume_added" == false ]]; then
-    echo "Volume=${volume_mount}" >> "${temp_file}"
+    echo "${desired_volume_entry}" >> "${temp_file}"
   fi
   
   # Replace the original file
@@ -702,8 +700,11 @@ remove_volume_from_container_quadlet() {
         # Skip these specific volume service dependencies
         continue
         ;;
-      "Volume="*":${MOUNT_POINT}"*)
-        # Skip volume mounts from this mount point
+      "Volume=${NAME}:${CONTAINER_PATH}"*)
+        # Skip references to this managed volume
+        continue
+        ;;
+      "Volume=${NAME}.volume:${CONTAINER_PATH}"*)
         continue
         ;;
       *)
