@@ -11,6 +11,7 @@ The `bro-activator` CLI program, as a bash script, is part of the Brothaman scri
   3. A Podman Quadlet container descriptor unit (`CONTAINER_NAME.container`) that defines the container to be run.
 * The `bro-activator` script supports the following command line options:
   * `--name CONTAINER_NAME`: The base name for the service components (socket, proxy, container). With the CONTAINER_NAME the script generates a `${CONTAINER_NAME}-activator.socket` and a `${CONTAINER_NAME}-activator.service` for the `${CONTAINER_NAME}.container` quadlet which Podman happens to automatically generate a `${CONTAINER_NAME}.service` for the quadlet.
+  * `--service-name VALUE`: Optional suffix to distinguish multiple activators for the same container. When provided, the generated units become `${CONTAINER_NAME}-${VALUE}-activator.{socket,service}` and their helper artifacts also pick up the suffix, preventing file collisions when exposing multiple ports.
   * `--external-port ADDR:PORT`: The external interface address and port on which the socket unit will listen for incoming connections (0.0.0.0 for all interfaces). If address is omitted, defaults to all interfaces.
   * `--internal-port ADDR:PORT`: The internal port on which the container will listen for connections. The proxy service unit will forward connections to this port inside the container. If address is omitted, defaults to 127.0.0.1 (localhost).
   * `--network VALUE`: Override the target container quadlet's `Network=` directive. When omitted the existing network configuration is left untouched.
@@ -24,6 +25,7 @@ The `bro-activator` CLI program, as a bash script, is part of the Brothaman scri
     * `run` - sources the env file and launches `podman unshare bro-helper --pid "${TARGET_PID}" -- /lib/systemd/systemd-socket-proxyd …`.
   * The generated service now references this helper script instead of embedding bash loops directly in systemd unit properties. This keeps the unit readable, eliminates quoting pitfalls, and makes it easier to evolve the orchestration logic.
 * The created systemd units are placed in the appropriate XDG paths for systemd user services and quadlets under `~/.config/systemd/user/`.
+* Before writing any activator units, the script checks if the target socket or service files already exist (after factoring in `--service-name`, when provided). It aborts with an error when collisions are detected so that existing activators are not silently overwritten.
 * The `bro-activator` script can be extended in the future to support additional features as needed.
 * The `bro-activator` script is intended to be used by system administrators and unprivileged users to create socket-activated container services in a standardized and efficient manner.
 * The `bro-activator` script is part of the Brothaman project and is licensed under the ASL 2.0 License.

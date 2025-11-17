@@ -26,14 +26,17 @@ CONTAINER_NAME=""
 EXTERNAL_SPEC=""
 INTERNAL_SPEC=""
 NETWORK_OVERRIDE=""
+SERVICE_NAME=""
+ACTIVATOR_UNIT_PREFIX=""
 
 usage() {
   cat <<'EOF'
 Usage:
-  bro-activator --name CONTAINER_NAME [--external-port [ADDR:]PORT] [--internal-port [ADDR:]PORT]
+  bro-activator --name CONTAINER_NAME [--service-name SERVICE_NAME] [--external-port [ADDR:]PORT] [--internal-port [ADDR:]PORT]
 
 Options:
   --name CONTAINER_NAME        Base name for the container quadlet and activator units (required)
+  --service-name VALUE         Optional suffix used to distinguish multiple activators for the same container
   --external-port ADDR:PORT    Host address and port to listen on (defaults to 0.0.0.0:PORT, PORT required)
   --internal-port ADDR:PORT    Container address and port to proxy to (defaults to 127.0.0.1:PORT, PORT required)
   --network VALUE              Override the container quadlet Network= setting (leave unchanged by default)
@@ -50,6 +53,7 @@ parse_args() {
   while (( $# )); do
     case "$1" in
       --name) shift; CONTAINER_NAME="${1:-}" ;;
+      --service-name) shift; SERVICE_NAME="${1:-}" ;;
       --external-port) shift; EXTERNAL_SPEC="${1:-}" ;;
       --internal-port) shift; INTERNAL_SPEC="${1:-}" ;;
       --network) shift; NETWORK_OVERRIDE="${1:-}" ;;
@@ -66,6 +70,9 @@ parse_args() {
 
   [[ -n "${CONTAINER_NAME}" ]] || { bro_error "--name is required"; exit 2; }
   [[ "${CONTAINER_NAME}" =~ ^[a-zA-Z0-9._@-]+$ ]] || { bro_error "Invalid container name '${CONTAINER_NAME}'"; exit 2; }
+  if [[ -n "${SERVICE_NAME}" ]]; then
+    [[ "${SERVICE_NAME}" =~ ^[a-zA-Z0-9._@-]+$ ]] || { bro_error "Invalid service name '${SERVICE_NAME}'"; exit 2; }
+  fi
 }
 
 command_paths() {
@@ -163,8 +170,13 @@ resolve_paths() {
   USER_SYSTEMD_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
   USER_CONTAINER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/containers/systemd"
 
-  SOCKET_UNIT_PATH="${USER_SYSTEMD_DIR}/${CONTAINER_NAME}-activator.socket"
-  SERVICE_UNIT_PATH="${USER_SYSTEMD_DIR}/${CONTAINER_NAME}-activator.service"
+  ACTIVATOR_UNIT_PREFIX="${CONTAINER_NAME}-activator"
+  if [[ -n "${SERVICE_NAME}" ]]; then
+    ACTIVATOR_UNIT_PREFIX="${CONTAINER_NAME}-${SERVICE_NAME}-activator"
+  fi
+
+  SOCKET_UNIT_PATH="${USER_SYSTEMD_DIR}/${ACTIVATOR_UNIT_PREFIX}.socket"
+  SERVICE_UNIT_PATH="${USER_SYSTEMD_DIR}/${ACTIVATOR_UNIT_PREFIX}.service"
   CONTAINER_QUADLET_PATH="${USER_CONTAINER_DIR}/${CONTAINER_NAME}.container"
 
   [[ -f "${CONTAINER_QUADLET_PATH}" ]] || {
@@ -173,6 +185,21 @@ resolve_paths() {
   }
 
   install -d -m 0750 "${USER_SYSTEMD_DIR}" "${USER_CONTAINER_DIR}"
+}
+
+ensure_no_unit_collisions() {
+  local clashes=()
+  for unit_path in "${SOCKET_UNIT_PATH}" "${SERVICE_UNIT_PATH}"; do
+    if [[ -e "${unit_path}" ]]; then
+      clashes+=("${unit_path}")
+    fi
+  done
+
+  if (( ${#clashes[@]} )); then
+    bro_error "Activator units already exist for ${CONTAINER_NAME}${SERVICE_NAME:+ (${SERVICE_NAME})}: ${clashes[*]}"
+    bro_error "Remove the existing files or choose a different --service-name."
+    exit 1
+  fi
 }
 
 resolve_container_identifier() {
@@ -246,10 +273,14 @@ write_socket_unit() {
   else
     listen_value="${EXTERNAL_PORT}"
   fi
+  local description="${CONTAINER_NAME}"
+  if [[ -n "${SERVICE_NAME}" ]]; then
+    description="${description} (${SERVICE_NAME})"
+  fi
 
   cat > "${SOCKET_UNIT_PATH}" <<EOF
 [Unit]
-Description=${CONTAINER_NAME} Activator Socket
+Description=${description} Activator Socket
 
 [Socket]
 ListenStream=${listen_value}
@@ -330,15 +361,15 @@ EOS
 }
 
 write_service_unit() {
-  local env_file="%t/${CONTAINER_NAME}-activator.env"
-  local helper_script="${USER_SYSTEMD_DIR}/${CONTAINER_NAME}-activator-helper.sh"
+  local env_file="%t/${ACTIVATOR_UNIT_PREFIX}.env"
+  local helper_script="${USER_SYSTEMD_DIR}/${ACTIVATOR_UNIT_PREFIX}-helper.sh"
 
   write_helper_script "${helper_script}"
   cat > "${SERVICE_UNIT_PATH}" <<EOF
 [Unit]
-Description=${CONTAINER_NAME} Activator Service
-Requires=${CONTAINER_NAME}-activator.socket ${CONTAINER_NAME}.service
-After=${CONTAINER_NAME}-activator.socket ${CONTAINER_NAME}.service
+Description=${CONTAINER_NAME}${SERVICE_NAME:+ (${SERVICE_NAME})} Activator Service
+Requires=${ACTIVATOR_UNIT_PREFIX}.socket ${CONTAINER_NAME}.service
+After=${ACTIVATOR_UNIT_PREFIX}.socket ${CONTAINER_NAME}.service
 
 [Service]
 Type=simple
@@ -375,7 +406,7 @@ Activator configuration for '${CONTAINER_NAME}' created.
 
 Remember to run:
   systemctl --user daemon-reload
-  systemctl --user enable --now ${CONTAINER_NAME}-activator.socket
+  systemctl --user enable --now ${ACTIVATOR_UNIT_PREFIX}.socket
 EOF
 }
 
@@ -397,6 +428,7 @@ main() {
 
   check_external_port "${EXTERNAL_HOST}" "${EXTERNAL_PORT}"
   resolve_paths
+  ensure_no_unit_collisions
   resolve_container_identifier
   update_container_quadlet
   write_socket_unit
