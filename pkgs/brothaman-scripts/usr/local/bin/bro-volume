@@ -27,11 +27,23 @@ DEFAULT_RETENTION=5
 
 NAME=""
 MOUNT_POINT=""
+DATA_DIR=""
 CONTAINER_NAME=""
 CONTAINER_PATH=""
 OWNER=""
 RETENTION="${DEFAULT_RETENTION}"
 REMOVE="false"
+CONTAINER_USER_SPEC=""
+CONTAINER_GROUP_SPEC=""
+VOLUME_UID=""
+VOLUME_GID=""
+CUSTOM_PERMISSIONS="0"
+CONTAINER_HAS_USERNS=""
+OWNER_SUBUID_START=""
+OWNER_SUBUID_COUNT=""
+OWNER_SUBGID_START=""
+OWNER_SUBGID_COUNT=""
+DATA_SUBDIR_NAME="data"
 
 usage() {
   cat <<'EOF'
@@ -45,6 +57,8 @@ Options:
   --mount-point PATH          Mount point for the dataset (defaults to /var/lib/containers/unprivileged/OWNER/volumes/NAME)
   --container CONTAINER_NAME  Container unit that consumes the volume (adds PartOf=)
   --container-path PATH       Container mount path (required when --container is used)
+  --container-user VALUES     Username/UID or internal:UID used to own the dataset contents (defaults to owner's UID)
+  --container-group VALUES    Group name/GID or internal:GID used to own the dataset contents (defaults to owner's GID)
   --pre_snapshots NUM         Retention count for pre_ snapshots (default 5, 0 disables)
   --remove                    Remove the specified volume and clean up dependencies
   --help                      Show this help text
@@ -56,6 +70,177 @@ print_version() {
   echo "bro-volume ${BRO_VOLUME_VERSION}"
 }
 
+validate_identity_spec() {
+  local spec="$1"
+  local label="$2"
+
+  if [[ -z "${spec}" ]]; then
+    return
+  fi
+
+  if [[ "${spec}" == internal:* ]]; then
+    local value="${spec#internal:}"
+    if [[ -z "${value}" || ! "${value}" =~ ^[0-9]+$ ]]; then
+      bro_error "${label} requires a numeric value after 'internal:' (e.g., internal:5050)"
+      exit 2
+    fi
+  fi
+}
+
+read_subid_range() {
+  local file="$1"
+  local start_var="$2"
+  local count_var="$3"
+
+  if [[ ! -r "${file}" ]]; then
+    bro_error "Cannot read ${file} while translating internal IDs"
+    exit 2
+  fi
+
+  local mapping
+  mapping=$(awk -F: -v user="${OWNER}" '$1 == user {print $2 ":" $3; exit}' "${file}" 2>/dev/null || true)
+  if [[ -z "${mapping}" ]]; then
+    bro_error "Owner '${OWNER}' has no entry in ${file}; cannot translate internal IDs"
+    exit 2
+  fi
+
+  local start="${mapping%%:*}"
+  local count="${mapping##*:}"
+  if [[ -z "${start}" || -z "${count}" || ! "${start}" =~ ^[0-9]+$ || ! "${count}" =~ ^[0-9]+$ ]]; then
+    bro_error "Invalid ${file} entry for owner '${OWNER}'"
+    exit 2
+  fi
+
+  printf -v "${start_var}" '%s' "${start}"
+  printf -v "${count_var}" '%s' "${count}"
+}
+
+translate_internal_id() {
+  local type="$1"
+  local internal="$2"
+  local label="UID"
+  local default_id
+  local internal_num="${internal}"
+
+  if [[ "${type}" == "uid" ]]; then
+    default_id="${OWNER_UID}"
+    label="UID"
+  else
+    default_id="${OWNER_GID}"
+    label="GID"
+  fi
+
+  if (( internal_num == 0 )); then
+    echo "${default_id}"
+    return
+  fi
+
+  local start=""
+  local count=""
+  if [[ "${type}" == "uid" ]]; then
+    if [[ -z "${OWNER_SUBUID_START}" ]]; then
+      read_subid_range "/etc/subuid" "OWNER_SUBUID_START" "OWNER_SUBUID_COUNT"
+    fi
+    start="${OWNER_SUBUID_START}"
+    count="${OWNER_SUBUID_COUNT}"
+  else
+    if [[ -z "${OWNER_SUBGID_START}" ]]; then
+      read_subid_range "/etc/subgid" "OWNER_SUBGID_START" "OWNER_SUBGID_COUNT"
+    fi
+    start="${OWNER_SUBGID_START}"
+    count="${OWNER_SUBGID_COUNT}"
+  fi
+
+  if (( internal_num > count )); then
+    bro_error "Internal ${label} ${internal_num} exceeds allocated range (${count}) for owner '${OWNER}'"
+    exit 2
+  fi
+
+  local host_value=$(( start + internal_num - 1 ))
+  echo "${host_value}"
+}
+
+container_has_userns() {
+  if [[ -z "${CONTAINER_NAME}" ]]; then
+    CONTAINER_HAS_USERNS="false"
+    return 1
+  fi
+
+  if [[ "${CONTAINER_HAS_USERNS}" == "true" ]]; then
+    return 0
+  elif [[ "${CONTAINER_HAS_USERNS}" == "false" ]]; then
+    return 1
+  fi
+
+  local container_quadlet="${OWNER_HOME}/.config/containers/systemd/${CONTAINER_NAME}.container"
+  if [[ -f "${container_quadlet}" ]]; then
+    local userns_line
+    userns_line=$(grep -E '^[[:space:]]*UserNS[[:space:]]*=' "${container_quadlet}" 2>/dev/null | head -n1 || true)
+    if [[ -n "${userns_line}" ]]; then
+      local value="${userns_line#*=}"
+      value="$(echo "${value}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+      if [[ -n "${value}" ]]; then
+        CONTAINER_HAS_USERNS="true"
+        return 0
+      fi
+    fi
+  fi
+
+  CONTAINER_HAS_USERNS="false"
+  return 1
+}
+
+ensure_internal_translation_allowed() {
+  local type="$1"
+  if [[ -z "${CONTAINER_NAME}" ]]; then
+    return
+  fi
+
+  if container_has_userns; then
+    bro_error "Cannot translate internal ${type} values because container '${CONTAINER_NAME}' defines UserNS"
+    exit 2
+  fi
+}
+
+resolve_identity_value() {
+  local type="$1"
+  local spec="$2"
+  local default_id="$3"
+
+  if [[ -z "${spec}" ]]; then
+    echo "${default_id}"
+    return
+  fi
+
+  if [[ "${spec}" == internal:* ]]; then
+    local internal_value="${spec#internal:}"
+    ensure_internal_translation_allowed "${type}"
+    translate_internal_id "${type}" "${internal_value}"
+    return
+  fi
+
+  if [[ "${spec}" =~ ^[0-9]+$ ]]; then
+    echo "${spec}"
+    return
+  fi
+
+  if [[ "${type}" == "uid" ]]; then
+    local entry
+    if ! entry=$(getent passwd "${spec}"); then
+      bro_error "User '${spec}' not found for --container-user"
+      exit 2
+    fi
+    printf '%s\n' "${entry}" | cut -d: -f3
+  else
+    local entry
+    if ! entry=$(getent group "${spec}"); then
+      bro_error "Group '${spec}' not found for --container-group"
+      exit 2
+    fi
+    printf '%s\n' "${entry}" | cut -d: -f3
+  fi
+}
+
 parse_args() {
   while (( $# )); do
     case "$1" in
@@ -64,6 +249,16 @@ parse_args() {
       --mount-point) shift; MOUNT_POINT="${1:-}";;
       --container) shift; CONTAINER_NAME="${1:-}";;
       --container-path) shift; CONTAINER_PATH="${1:-}";;
+      --container-user) shift; CONTAINER_USER_SPEC="${1:-}";;
+      --container-group) shift; CONTAINER_GROUP_SPEC="${1:-}";;
+      --container-uid)
+        bro_warn "--container-uid is deprecated; use --container-user"
+        shift; CONTAINER_USER_SPEC="${1:-}"
+        ;;
+      --container-gid)
+        bro_warn "--container-gid is deprecated; use --container-group"
+        shift; CONTAINER_GROUP_SPEC="${1:-}"
+        ;;
       --pre_snapshots) shift; RETENTION="${1:-}";;
       --remove) REMOVE="true";;
       --help) usage; exit 0;;
@@ -93,9 +288,12 @@ parse_args() {
     exit 2
   fi
 
+  validate_identity_spec "${CONTAINER_USER_SPEC}" "--container-user"
+  validate_identity_spec "${CONTAINER_GROUP_SPEC}" "--container-group"
+
   # Validation for remove mode
   if [[ "${REMOVE}" == "true" ]]; then
-    if [[ -n "${CONTAINER_NAME}" || -n "${CONTAINER_PATH}" || -n "${MOUNT_POINT}" || "${RETENTION}" != "${DEFAULT_RETENTION}" ]]; then
+    if [[ -n "${CONTAINER_NAME}" || -n "${CONTAINER_PATH}" || -n "${MOUNT_POINT}" || "${RETENTION}" != "${DEFAULT_RETENTION}" || -n "${CONTAINER_USER_SPEC}" || -n "${CONTAINER_GROUP_SPEC}" ]]; then
       bro_error "--remove can only be used with --name and --owner"
       exit 2
     fi
@@ -120,7 +318,7 @@ parse_args() {
 
 require_dependencies() {
   local missing=()
-  for cmd in zfs zpool zfs-helperctl useradd usermod install awk; do
+for cmd in zfs zpool zfs-helperctl useradd usermod install awk podman setfacl; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
       missing+=("$cmd")
     fi
@@ -133,6 +331,7 @@ require_dependencies() {
   ZFS_BIN="$(command -v zfs)"
   ZPOOL_BIN="$(command -v zpool)"
   ZFS_HELPERCTL_BIN="$(command -v zfs-helperctl)"
+  PODMAN_BIN="$(command -v podman)"
 }
 
 ensure_owner_account() {
@@ -187,12 +386,33 @@ resolve_paths() {
       ;;
   esac
 
+  MOUNT_POINT="${MOUNT_POINT%/}"
+  if [[ -z "${MOUNT_POINT}" ]]; then
+    bro_error "Computed mount point cannot be empty"
+    exit 1
+  fi
+  DATA_DIR="${MOUNT_POINT}/${DATA_SUBDIR_NAME}"
+
   VOLUME_DATASET="${OWNER_DATASET}/volumes/${NAME}"
   VOLUME_UNIT="${NAME}-volume.service"
   OWNER_UID=$(id -u "${OWNER}")
   OWNER_GID=$(id -g "${OWNER}")
 
   install -d -m 0750 -o "${OWNER_UID}" -g "${OWNER_GID}" "${OWNER_HOME}/volumes"
+  chown "${OWNER_UID}:${OWNER_GID}" "${OWNER_HOME}/volumes" >/dev/null 2>&1 || true
+
+  determine_volume_permissions
+}
+
+determine_volume_permissions() {
+  VOLUME_UID="$(resolve_identity_value "uid" "${CONTAINER_USER_SPEC}" "${OWNER_UID}")"
+  VOLUME_GID="$(resolve_identity_value "gid" "${CONTAINER_GROUP_SPEC}" "${OWNER_GID}")"
+
+  if [[ "${VOLUME_UID}" != "${OWNER_UID}" || "${VOLUME_GID}" != "${OWNER_GID}" ]]; then
+    CUSTOM_PERMISSIONS="1"
+  else
+    CUSTOM_PERMISSIONS="0"
+  fi
 }
 
 create_dataset() {
@@ -220,10 +440,18 @@ create_dataset() {
   "${ZFS_BIN}" set compression=zstd "${VOLUME_DATASET}" >/dev/null 2>&1 || true
   "${ZFS_BIN}" set atime=off "${VOLUME_DATASET}" >/dev/null 2>&1 || true
   "${ZFS_BIN}" set recordsize=128K "${VOLUME_DATASET}" >/dev/null 2>&1 || true
+  "${ZFS_BIN}" set snapdir=hidden "${VOLUME_DATASET}" >/dev/null 2>&1 || true
 
-  install -d -m 0750 "${MOUNT_POINT}"
+  install -d -m 0750 -o "${OWNER_UID}" -g "${OWNER_GID}" "$(dirname "${MOUNT_POINT}")"
+  install -d -m 0750 -o "${OWNER_UID}" -g "${OWNER_GID}" "${MOUNT_POINT}"
   "${ZFS_BIN}" mount "${VOLUME_DATASET}" >/dev/null 2>&1 || true
   chown "${OWNER_UID}:${OWNER_GID}" "${MOUNT_POINT}"
+
+  install -d -m 0750 -o "${VOLUME_UID}" -g "${VOLUME_GID}" "${DATA_DIR}"
+  if [[ "${CUSTOM_PERMISSIONS}" -eq 1 ]]; then
+    setfacl -m "u:${OWNER_UID}:rwx" "${DATA_DIR}"
+    setfacl -d -m "u:${OWNER_UID}:rwx" "${DATA_DIR}"
+  fi
 }
 
 ensure_policy_entry() {
@@ -270,9 +498,8 @@ update_container_quadlet() {
   fi
 
   local volume_service="${NAME}-volume.service"
-  
-  # Use the provided container path for the volume mount
-  local volume_mount="${MOUNT_POINT}:${CONTAINER_PATH}"
+  local volume_mount="${DATA_DIR}:${CONTAINER_PATH}"
+  local volume_quadlet_ref="${NAME}.volume"
   
   # Create a temporary file for the updated quadlet
   local temp_file
@@ -317,9 +544,39 @@ update_container_quadlet() {
         # Skip existing dependencies for THIS specific volume service (will be re-added)
         continue
         ;;
-      "Volume="*":${CONTAINER_PATH}")
-        # Skip existing volume mounts to this specific container path (will be re-added)
-        continue
+      "Volume="*)
+        local volume_entry="${line#Volume=}"
+        local entry_source=""
+        local entry_target=""
+        local entry_options=""
+        IFS=':' read -r entry_source entry_target entry_options <<< "${volume_entry}"
+        local entry_source_base="${entry_source%.volume}"
+
+        # Keep existing references to this volume quadlet
+        if [[ "${entry_source}" == "${volume_quadlet_ref}" || "${entry_source_base}" == "${NAME}" ]]; then
+          volume_added=true
+          echo "$line"
+          continue
+        fi
+
+        # Keep existing bind mounts that already match the requested host/container path
+        if [[ "${entry_source}" == "${DATA_DIR}" && "${entry_target}" == "${CONTAINER_PATH}" ]]; then
+          volume_added=true
+          echo "$line"
+          continue
+        fi
+
+        # Remove legacy mount entries that bind the dataset root directly
+        if [[ "${entry_source}" == "${MOUNT_POINT}" && "${entry_target}" == "${CONTAINER_PATH}" ]]; then
+          continue
+        fi
+
+        # Remove conflicting bind mounts targeting the same container path
+        if [[ "${entry_target}" == "${CONTAINER_PATH}" ]]; then
+          continue
+        fi
+
+        echo "$line"
         ;;
       *)
         echo "$line"
@@ -367,7 +624,7 @@ VolumeName=${NAME}
 Environment=MOUNT_POINT=${MOUNT_POINT}
 Environment=VOLUME_DATASET=${VOLUME_DATASET}
 Environment=KEEP_SNAPSHOTS=${RETENTION}
-ExecStartPre=/bin/sh -c 'if [ "\$\${KEEP_SNAPSHOTS}" -gt 0 ]; then ${zfs_helper} snapshot "\$\${VOLUME_DATASET}@pre_\$\$(date +%%Y%%m%%d%%H%%M%%S)"; fi'
+ExecStartPre=/bin/sh -c 'if [ "\$\${KEEP_SNAPSHOTS}" -gt 0 ]; then ${zfs_helper} snapshot "\$\${VOLUME_DATASET}@pre_\$\$(date +%%s%%N)"; fi'
 ExecStartPre=/bin/sh -c 'if [ "\$\${KEEP_SNAPSHOTS}" -gt 0 ]; then ${zfs_bin} list -t snapshot -o name -s creation | grep -E "^\$\${VOLUME_DATASET}@pre_" | head -n -\$\${KEEP_SNAPSHOTS} | xargs -r -n1 ${zfs_helper} destroy; fi'
 
 [Install]
@@ -460,8 +717,12 @@ remove_volume_from_container_quadlet() {
         # Skip these specific volume service dependencies
         continue
         ;;
+      "Volume="*":${DATA_DIR}"*)
+        # Skip volume mounts from this managed data directory
+        continue
+        ;;
       "Volume="*":${MOUNT_POINT}"*)
-        # Skip volume mounts from this mount point
+        # Skip legacy mounts tied to the dataset root
         continue
         ;;
       *)
@@ -471,7 +732,7 @@ remove_volume_from_container_quadlet() {
   done < "${container_quadlet}" > "${temp_file}"
   
   mv "${temp_file}" "${container_quadlet}"
-  bro_debug "Removed volume dependencies from: ${container_quadlet}"
+  bro_info "Removed volume dependencies from: ${container_quadlet}"
 }
 
 remove_zfs_helper_policy() {
@@ -486,7 +747,7 @@ remove_zfs_helper_policy() {
   local units_file="${policy_dir}/units.list"
   if [[ -f "${units_file}" ]]; then
     sed -i "/^${volume_service}$/d" "${units_file}"
-    bro_debug "Removed ${volume_service} from ${units_file}"
+    bro_info "Removed ${volume_service} from ${units_file}"
   fi
   
   # Remove dataset entries from operation lists if no other volumes use the same dataset
@@ -506,7 +767,7 @@ remove_zfs_helper_policy() {
       [[ "$(basename "${op_file}")" != "units.list" ]] || continue
       
       sed -i "/^${OWNER} ${VOLUME_DATASET}$/d" "${op_file}" 2>/dev/null || true
-      bro_debug "Removed dataset entry from $(basename "${op_file}")"
+      bro_info "Removed dataset entry from $(basename "${op_file}")"
     done
   fi
 }

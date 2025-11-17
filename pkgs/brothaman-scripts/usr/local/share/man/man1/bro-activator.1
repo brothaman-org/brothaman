@@ -21,17 +21,17 @@ and matching
 .I $CONTAINER_NAME-activator.service
 in
 .IR ~/.config/systemd/user/ ,
-updates the container quadlet to disable host port publishing, and wires the
+updates the container quadlet to disable only the conflicting host port publishing entries (so existing, non-conflicting `PublishPort=` directives remain), and wires the
 service to run
 .B systemd-socket-proxyd
 inside the container using
 .BR bro-helper .
 
 The script is intended to be run by the unprivileged account that owns the quadlet.
-It validates port availability, ensures the container quadlet exists, and adjusts
-the configuration to use
-.B Network=none
-instead of Podman port publishing.
+It validates port availability, ensures the container quadlet exists, and, if requested, can override the target quadlet's
+.B Network=
+directive via
+.BR --network .
 .SH OPTIONS
 .TP
 .B --name CONTAINER_NAME
@@ -44,6 +44,11 @@ Host address and port to listen on. The address defaults to
 .B --internal-port [ADDR:]PORT
 Container address and port to forward to. The address defaults to
 .BR 127.0.0.1 .
+.TP
+.B --network VALUE
+Override the container quadlet's
+.B Network=
+line with the supplied value (leave it untouched when omitted).
 .TP
 .B --help
 Display usage information and exit.
@@ -59,7 +64,7 @@ Generated socket unit.
 Generated service unit.
 .TP
 .I ~/.config/containers/systemd/$CONTAINER_NAME.container
-Existing container quadlet, updated to remove host port publishing.
+Existing container quadlet, updated to remove only conflicting `PublishPort=` entries (and optionally override `Network=` when requested).
 .SH SEE ALSO
 .BR bro-user (1),
 .BR bro-volume (1),

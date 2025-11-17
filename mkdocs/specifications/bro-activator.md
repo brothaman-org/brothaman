@@ -13,6 +13,7 @@ The `bro-activator` CLI program, as a bash script, is part of the Brothaman scri
   * `--name CONTAINER_NAME`: The base name for the service components (socket, proxy, container). With the CONTAINER_NAME the script generates a `${CONTAINER_NAME}-activator.socket` and a `${CONTAINER_NAME}-activator.service` for the `${CONTAINER_NAME}.container` quadlet which Podman happens to automatically generate a `${CONTAINER_NAME}.service` for the quadlet.
   * `--external-port ADDR:PORT`: The external interface address and port on which the socket unit will listen for incoming connections (0.0.0.0 for all interfaces). If address is omitted, defaults to all interfaces.
   * `--internal-port ADDR:PORT`: The internal port on which the container will listen for connections. The proxy service unit will forward connections to this port inside the container. If address is omitted, defaults to 127.0.0.1 (localhost).
+  * `--network VALUE`: Override the target container quadlet's `Network=` directive. When omitted the existing network configuration is left untouched.
   * `--help`: Display help information about the script usage.
   * `--version`: Display the version of the `bro-activator` script.
 
@@ -30,7 +31,7 @@ The `bro-activator` CLI program, as a bash script, is part of the Brothaman scri
 * The `bro-activator` script ensures that the created systemd units follow best practices for security, resource management, and systemd integration.
 * The `bro-activator` script provides error handling and validation for the command line arguments to ensure that the specified parameters are valid and that the systemd units can be created successfully.
 * The `bro-activator` script is intended to be used in conjunction with other Brothaman scripts, such as `bro-user` and `bro-volume`, to create a complete environment for running unprivileged rootless Podman containers with socket activation capabilities.
-* The `bro-activator` script configures the container quadlet unit removing no longer needed PublishPort and Networking directives (setting Networking=none) when using the systemd-socket-proxyd mechanism instead.
+* The `bro-activator` script updates the container quadlet unit surgically: it removes only the `PublishPort=` entries that would otherwise collide with the activator's requested `--external-port/--internal-port` combination, leaves other published ports alone, and preserves the existing `Network=` directive unless `--network` is explicitly supplied (in which case the new value replaces the old one).
 * The `bro-activator` script provides documentation and usage examples to assist users in creating socket-activated container services using the man page facilities. Make sure a man page is created for it and installed properly along side the script.
 * The `bro-activator` script verifies that the specified external and internal ports are available and not already in use by other services.
 * The `bro-activator` script allows for customization of the created systemd units through additional command line options or configuration files in the future.

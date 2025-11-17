@@ -23,6 +23,7 @@ source "${BRO_COMMON}"
 BRO_USER_VERSION="1.0.0"
 DEFAULT_UMASK="0027"
 RANGE_SIZE=65536
+DEFAULT_NETWORK_CMD="none"
 
 USER_HOME_BASE="/var/lib/containers/unprivileged"
 SUBUID_FILE="/etc/subuid"
@@ -35,6 +36,7 @@ USERNAME=""
 BASE_DATASET=""
 USER_DATASET=""
 DATASET_CREATED=0
+NETWORK_CMD="${DEFAULT_NETWORK_CMD}"
 
 usage() {
   cat <<'EOF'
@@ -48,6 +50,7 @@ Options:
   --system-user   Create the account as a system user with /usr/sbin/nologin
   --remove        Remove the account and all associated resources
   --no-hello      Skip running the Podman hello container verification
+  --network-cmd VALUE  Override the default Podman network command (defaults to 'pasta')
   --help          Show this message
   --version       Display bro-user version information
 EOF
@@ -64,6 +67,7 @@ parse_args() {
       --system-user) SYSTEM_USER=1 ;;
       --remove) DO_REMOVE=1 ;;
       --no-hello) SKIP_HELLO=1 ;;
+      --network-cmd) shift; NETWORK_CMD="${1:-}" ;;
       --help) usage; exit 0 ;;
       --version) print_version; exit 0 ;;
       --) shift; while (( $# )); do args+=("$1"); shift; done; break ;;
@@ -88,6 +92,8 @@ parse_args() {
     bro_error "Cannot combine --system-user with --remove."
     exit 2
   fi
+
+  [[ -n "${NETWORK_CMD}" ]] || NETWORK_CMD="${DEFAULT_NETWORK_CMD}"
 }
 
 require_dependencies() {
@@ -307,9 +313,13 @@ write_containers_conf() {
   uid=$(id -u "${USERNAME}")
   gid=$(id -g "${USERNAME}")
 
-  cat > "${containers_conf}" <<'EOF'
+  local net_cmd="${NETWORK_CMD}"
+  [[ -n "${net_cmd}" ]] || net_cmd="${DEFAULT_NETWORK_CMD}"
+  local escaped_net_cmd="${net_cmd//\"/\\\"}"
+
+  cat > "${containers_conf}" <<EOF
 [engine]
-network_cmd = "none"
+network_cmd = "${escaped_net_cmd}"
 storage_driver = "overlay"
 storage_options = ["overlay.mountopt=nodev"]
 EOF

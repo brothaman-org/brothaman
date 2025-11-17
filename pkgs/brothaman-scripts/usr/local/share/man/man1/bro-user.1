@@ -34,6 +34,15 @@ Create the user as a system account with
 .B --remove
 Remove the specified account and all managed resources.
 .TP
+.B --network-cmd VALUE
+Override the per-user Podman
+.B network_cmd
+setting (defaults to
+.BR none ).
+.TP
+.B --no-hello
+Skip the Podman hello container verification.
+.TP
 .B --help
 Display usage information and exit.
 .TP

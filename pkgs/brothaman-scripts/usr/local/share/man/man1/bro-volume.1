@@ -37,6 +37,30 @@ Add a
 .B PartOf=
 relationship to the given container unit.
 .TP
+.B --container-user VALUE
+Username, numeric UID, or
+.I internal:UID
+specifier to own the dataset contents (defaults to the owner's UID). Usernames are resolved via
+.B getent passwd
+and
+.I internal:UID
+values are translated through the owner's
+.I /etc/subuid
+range (with internal 0 mapping to the owner’s actual UID).
+.TP
+.B --container-group VALUE
+Group name, numeric GID, or
+.I internal:GID
+specifier to own the dataset contents (defaults to the owner's GID). Names are resolved via
+.B getent group
+and
+.I internal:GID
+values use the owner’s
+.I /etc/subgid
+range. When either ownership override is supplied, bro-volume applies it during dataset creation, layers ACLs so the unprivileged owner can still use the mount point, and records the mapping so the quadlet reapplies it on future starts. Internal mappings are rejected if the referenced container quadlet sets
+.B UserNS
+because a custom user namespace already handles ID translation.
+.TP
 .B --pre_snapshots NUM
 Retention count for
 .B pre_
