@@ -431,8 +431,6 @@ create_dataset() {
   "${ZFS_BIN}" set compression=zstd "${VOLUME_DATASET}" >/dev/null 2>&1 || true
   "${ZFS_BIN}" set atime=off "${VOLUME_DATASET}" >/dev/null 2>&1 || true
   "${ZFS_BIN}" set recordsize=128K "${VOLUME_DATASET}" >/dev/null 2>&1 || true
-  "${ZFS_BIN}" set snapdir=hidden "${VOLUME_DATASET}" >/dev/null 2>&1 || true
-
   install -d -m 0750 -o "${OWNER_UID}" -g "${OWNER_GID}" "$(dirname "${MOUNT_POINT}")"
   install -d -m 0750 -o "${OWNER_UID}" -g "${OWNER_GID}" "${MOUNT_POINT}"
   "${ZFS_BIN}" mount "${VOLUME_DATASET}" >/dev/null 2>&1 || true

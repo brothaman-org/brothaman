@@ -35,7 +35,6 @@ The `bro-volume` CLI program, as a bash script, is part of the Brothaman scripts
 * When the `--container` and `--container-path` options are provided, the `bro-volume` script automatically modifies the existing container quadlet to integrate the volume:
   * Adds systemd service dependencies (`PropagatesStopTo=`, `BindsTo=`, and `After=`) in the `[Unit]` section to properly link the volume service lifecycle with the container service.
   * Adds a `Volume=` directive in the `[Container]` section with the format `MOUNT_POINT:CONTAINER_PATH` to bind mount the ZFS dataset into the container at the specified path.
-  * Because `bro-volume` forces `snapdir=hidden` on the dataset, `.zfs` never shows up inside the container, so images like PostgreSQL do not skip initialization due to unexpected entries in their data directories.
   * Detects when the quadlet already declares the volume (either by referencing the generated `<NAME>.volume` quadlet, a shorthand `<NAME>` reference, or by using the same bind mount path) and reuses the existing directive instead of inserting a duplicate entry.
   * Removes any existing volume-related dependencies and volume mounts to the same container path to prevent conflicts.
   * Uses the correct systemd service naming convention where a volume quadlet named `NAME.volume` becomes the service `NAME-volume.service`.
