@@ -24,7 +24,7 @@ The `bro-volume` CLI program, as a bash script, is part of the Brothaman scripts
 * The `bro-volume` creates a `<NAME>.volume` quadlet for the specified unprivileged user in the appropriate XDG path: `~/.config/containers/systemd/<NAME>.volume`. The created volume quadlet contains the necessary configuration to use the created and prepared ZFS dataset as a Podman volume.
 * The created volume quadlet includes the following directives:
   * `Description=`: A brief description of the volume.
-  * `VolumeName=`: The name of the volume (ZFS dataset name).
+  * `VolumeName=`: The name of the volume (ZFS dataset name). The `[Volume]` section also declares `Device=<mount>` together with `Type=none` and `Options=bind` so the quadlet explicitly binds the dataset mount point into consuming containers without relying on Podman's implicit volume handling.
   * `Environment=`: Sets environment variables for the volume, including the mount point, the ZFS dataset (same as volume) name, and the owner user as well as things like the RETENTION for pre_snapshots.
     * When `--container-user`/`--container-group` are used, additional `Environment=` entries store the requested UID/GID and a flag the unit uses to reapply ownership on each start.
   * `Wants=`: Specifies that ZFS mounter is ready.
@@ -35,7 +35,7 @@ The `bro-volume` CLI program, as a bash script, is part of the Brothaman scripts
 * When the `--container` and `--container-path` options are provided, the `bro-volume` script automatically modifies the existing container quadlet to integrate the volume:
   * Adds systemd service dependencies (`PropagatesStopTo=`, `BindsTo=`, and `After=`) in the `[Unit]` section to properly link the volume service lifecycle with the container service.
   * Adds a `Volume=` directive in the `[Container]` section with the format `MOUNT_POINT:CONTAINER_PATH` to bind mount the ZFS dataset into the container at the specified path.
-  * The bind mount always targets the `<mount point>/data` subdirectory, never the dataset root, and `bro-volume` forces `snapdir=hidden` on the dataset so the `.zfs` control tree never shows up inside the container. Without that combination, images like PostgreSQL would see `.zfs` inside `PGDATA` and skip their initialization logic; the same isolation keeps future images happy by guaranteeing a truly empty directory on first start.
+  * Because `bro-volume` forces `snapdir=hidden` on the dataset, `.zfs` never shows up inside the container, so images like PostgreSQL do not skip initialization due to unexpected entries in their data directories.
   * Detects when the quadlet already declares the volume (either by referencing the generated `<NAME>.volume` quadlet, a shorthand `<NAME>` reference, or by using the same bind mount path) and reuses the existing directive instead of inserting a duplicate entry.
   * Removes any existing volume-related dependencies and volume mounts to the same container path to prevent conflicts.
   * Uses the correct systemd service naming convention where a volume quadlet named `NAME.volume` becomes the service `NAME-volume.service`.

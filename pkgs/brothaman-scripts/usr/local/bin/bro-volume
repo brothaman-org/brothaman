@@ -27,7 +27,6 @@ DEFAULT_RETENTION=5
 
 NAME=""
 MOUNT_POINT=""
-DATA_DIR=""
 CONTAINER_NAME=""
 CONTAINER_PATH=""
 OWNER=""
@@ -43,7 +42,6 @@ OWNER_SUBUID_START=""
 OWNER_SUBUID_COUNT=""
 OWNER_SUBGID_START=""
 OWNER_SUBGID_COUNT=""
-DATA_SUBDIR_NAME="data"
 
 usage() {
   cat <<'EOF'
@@ -386,13 +384,6 @@ resolve_paths() {
       ;;
   esac
 
-  MOUNT_POINT="${MOUNT_POINT%/}"
-  if [[ -z "${MOUNT_POINT}" ]]; then
-    bro_error "Computed mount point cannot be empty"
-    exit 1
-  fi
-  DATA_DIR="${MOUNT_POINT}/${DATA_SUBDIR_NAME}"
-
   VOLUME_DATASET="${OWNER_DATASET}/volumes/${NAME}"
   VOLUME_UNIT="${NAME}-volume.service"
   OWNER_UID=$(id -u "${OWNER}")
@@ -445,12 +436,10 @@ create_dataset() {
   install -d -m 0750 -o "${OWNER_UID}" -g "${OWNER_GID}" "$(dirname "${MOUNT_POINT}")"
   install -d -m 0750 -o "${OWNER_UID}" -g "${OWNER_GID}" "${MOUNT_POINT}"
   "${ZFS_BIN}" mount "${VOLUME_DATASET}" >/dev/null 2>&1 || true
-  chown "${OWNER_UID}:${OWNER_GID}" "${MOUNT_POINT}"
-
-  install -d -m 0750 -o "${VOLUME_UID}" -g "${VOLUME_GID}" "${DATA_DIR}"
+  chown "${VOLUME_UID}:${VOLUME_GID}" "${MOUNT_POINT}"
   if [[ "${CUSTOM_PERMISSIONS}" -eq 1 ]]; then
-    setfacl -m "u:${OWNER_UID}:rwx" "${DATA_DIR}"
-    setfacl -d -m "u:${OWNER_UID}:rwx" "${DATA_DIR}"
+    setfacl -m "u:${OWNER_UID}:rwx" "${MOUNT_POINT}"
+    setfacl -d -m "u:${OWNER_UID}:rwx" "${MOUNT_POINT}"
   fi
 }
 
@@ -498,7 +487,7 @@ update_container_quadlet() {
   fi
 
   local volume_service="${NAME}-volume.service"
-  local volume_mount="${DATA_DIR}:${CONTAINER_PATH}"
+  local volume_mount="${MOUNT_POINT}:${CONTAINER_PATH}"
   local volume_quadlet_ref="${NAME}.volume"
   
   # Create a temporary file for the updated quadlet
@@ -560,14 +549,9 @@ update_container_quadlet() {
         fi
 
         # Keep existing bind mounts that already match the requested host/container path
-        if [[ "${entry_source}" == "${DATA_DIR}" && "${entry_target}" == "${CONTAINER_PATH}" ]]; then
+        if [[ "${entry_source}" == "${MOUNT_POINT}" && "${entry_target}" == "${CONTAINER_PATH}" ]]; then
           volume_added=true
           echo "$line"
-          continue
-        fi
-
-        # Remove legacy mount entries that bind the dataset root directly
-        if [[ "${entry_source}" == "${MOUNT_POINT}" && "${entry_target}" == "${CONTAINER_PATH}" ]]; then
           continue
         fi
 
@@ -619,6 +603,9 @@ ${container_part}
 
 [Volume]
 VolumeName=${NAME}
+Device=${MOUNT_POINT}
+Type=none
+Options=bind
 
 [Service]
 Environment=MOUNT_POINT=${MOUNT_POINT}
@@ -717,12 +704,8 @@ remove_volume_from_container_quadlet() {
         # Skip these specific volume service dependencies
         continue
         ;;
-      "Volume="*":${DATA_DIR}"*)
-        # Skip volume mounts from this managed data directory
-        continue
-        ;;
       "Volume="*":${MOUNT_POINT}"*)
-        # Skip legacy mounts tied to the dataset root
+        # Skip volume mounts from this mount point
         continue
         ;;
       *)
