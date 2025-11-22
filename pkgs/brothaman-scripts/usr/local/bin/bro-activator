@@ -28,15 +28,19 @@ INTERNAL_SPEC=""
 NETWORK_OVERRIDE=""
 SERVICE_NAME=""
 ACTIVATOR_UNIT_PREFIX=""
+REMOVE_MODE=0
+ACTIVATOR_HELPER_PATH=""
 
 usage() {
   cat <<'EOF'
 Usage:
   bro-activator --name CONTAINER_NAME [--service-name SERVICE_NAME] [--external-port [ADDR:]PORT] [--internal-port [ADDR:]PORT]
+  bro-activator --remove --name CONTAINER_NAME [--service-name SERVICE_NAME]
 
 Options:
   --name CONTAINER_NAME        Base name for the container quadlet and activator units (required)
   --service-name VALUE         Optional suffix used to distinguish multiple activators for the same container
+  --remove                     Delete activator files for the given name (and optional service suffix)
   --external-port ADDR:PORT    Host address and port to listen on (defaults to 0.0.0.0:PORT, PORT required)
   --internal-port ADDR:PORT    Container address and port to proxy to (defaults to 127.0.0.1:PORT, PORT required)
   --network VALUE              Override the container quadlet Network= setting (leave unchanged by default)
@@ -54,6 +58,7 @@ parse_args() {
     case "$1" in
       --name) shift; CONTAINER_NAME="${1:-}" ;;
       --service-name) shift; SERVICE_NAME="${1:-}" ;;
+      --remove) REMOVE_MODE=1 ;;
       --external-port) shift; EXTERNAL_SPEC="${1:-}" ;;
       --internal-port) shift; INTERNAL_SPEC="${1:-}" ;;
       --network) shift; NETWORK_OVERRIDE="${1:-}" ;;
@@ -72,6 +77,13 @@ parse_args() {
   [[ "${CONTAINER_NAME}" =~ ^[a-zA-Z0-9._@-]+$ ]] || { bro_error "Invalid container name '${CONTAINER_NAME}'"; exit 2; }
   if [[ -n "${SERVICE_NAME}" ]]; then
     [[ "${SERVICE_NAME}" =~ ^[a-zA-Z0-9._@-]+$ ]] || { bro_error "Invalid service name '${SERVICE_NAME}'"; exit 2; }
+  fi
+
+  if (( REMOVE_MODE )); then
+    if [[ -n "${EXTERNAL_SPEC}" || -n "${INTERNAL_SPEC}" || -n "${NETWORK_OVERRIDE}" ]]; then
+      bro_error "--external-port, --internal-port, and --network are not valid with --remove"
+      exit 2
+    fi
   fi
 }
 
@@ -174,17 +186,19 @@ resolve_paths() {
   if [[ -n "${SERVICE_NAME}" ]]; then
     ACTIVATOR_UNIT_PREFIX="${CONTAINER_NAME}-${SERVICE_NAME}-activator"
   fi
+  ACTIVATOR_HELPER_PATH="${USER_SYSTEMD_DIR}/${ACTIVATOR_UNIT_PREFIX}-helper.sh"
 
   SOCKET_UNIT_PATH="${USER_SYSTEMD_DIR}/${ACTIVATOR_UNIT_PREFIX}.socket"
   SERVICE_UNIT_PATH="${USER_SYSTEMD_DIR}/${ACTIVATOR_UNIT_PREFIX}.service"
   CONTAINER_QUADLET_PATH="${USER_CONTAINER_DIR}/${CONTAINER_NAME}.container"
 
-  [[ -f "${CONTAINER_QUADLET_PATH}" ]] || {
-    bro_error "Container quadlet not found at ${CONTAINER_QUADLET_PATH}"
-    exit 1
-  }
-
-  install -d -m 0750 "${USER_SYSTEMD_DIR}" "${USER_CONTAINER_DIR}"
+  if (( ! REMOVE_MODE )); then
+    [[ -f "${CONTAINER_QUADLET_PATH}" ]] || {
+      bro_error "Container quadlet not found at ${CONTAINER_QUADLET_PATH}"
+      exit 1
+    }
+    install -d -m 0750 "${USER_SYSTEMD_DIR}" "${USER_CONTAINER_DIR}"
+  fi
 }
 
 ensure_no_unit_collisions() {
@@ -199,6 +213,29 @@ ensure_no_unit_collisions() {
     bro_error "Activator units already exist for ${CONTAINER_NAME}${SERVICE_NAME:+ (${SERVICE_NAME})}: ${clashes[*]}"
     bro_error "Remove the existing files or choose a different --service-name."
     exit 1
+  fi
+}
+
+remove_activator_units() {
+  local removed=()
+  for target in "${SOCKET_UNIT_PATH}" "${SERVICE_UNIT_PATH}" "${ACTIVATOR_HELPER_PATH}"; do
+    if [[ -e "${target}" ]]; then
+      rm -f "${target}"
+      removed+=("${target}")
+    fi
+  done
+
+  local desc="${CONTAINER_NAME}"
+  if [[ -n "${SERVICE_NAME}" ]]; then
+    desc="${desc} (${SERVICE_NAME})"
+  fi
+
+  if (( ${#removed[@]} )); then
+    for target in "${removed[@]}"; do
+      bro_info "Removed ${target}"
+    done
+  else
+    bro_warn "No activator files found for ${desc}"
   fi
 }
 
@@ -362,9 +399,7 @@ EOS
 
 write_service_unit() {
   local env_file="%t/${ACTIVATOR_UNIT_PREFIX}.env"
-  local helper_script="${USER_SYSTEMD_DIR}/${ACTIVATOR_UNIT_PREFIX}-helper.sh"
-
-  write_helper_script "${helper_script}"
+  write_helper_script "${ACTIVATOR_HELPER_PATH}"
   cat > "${SERVICE_UNIT_PATH}" <<EOF
 [Unit]
 Description=${CONTAINER_NAME}${SERVICE_NAME:+ (${SERVICE_NAME})} Activator Service
@@ -375,14 +410,14 @@ After=${ACTIVATOR_UNIT_PREFIX}.socket ${CONTAINER_NAME}.service
 Type=simple
 
 # Capture the container PID for bro-helper and write environment file
-ExecStartPre=${helper_script} capture ${env_file} ${PODMAN_BIN} ${BRO_HELPER_BIN} ${CONTAINER_IDENTIFIER} ${INTERNAL_HOST} ${INTERNAL_PORT}
+ExecStartPre=${ACTIVATOR_HELPER_PATH} capture ${env_file} ${PODMAN_BIN} ${BRO_HELPER_BIN} ${CONTAINER_IDENTIFIER} ${INTERNAL_HOST} ${INTERNAL_PORT}
 
 EnvironmentFile=-${env_file}
 
 # Wait until the container port is available inside its network namespace
-ExecStartPre=${helper_script} wait ${env_file} ${PODMAN_BIN} ${BRO_HELPER_BIN} ${CONTAINER_IDENTIFIER} ${INTERNAL_HOST} ${INTERNAL_PORT}
+ExecStartPre=${ACTIVATOR_HELPER_PATH} wait ${env_file} ${PODMAN_BIN} ${BRO_HELPER_BIN} ${CONTAINER_IDENTIFIER} ${INTERNAL_HOST} ${INTERNAL_PORT}
 
-ExecStart=${helper_script} run ${env_file} ${PODMAN_BIN} ${BRO_HELPER_BIN} ${CONTAINER_IDENTIFIER} ${INTERNAL_HOST} ${INTERNAL_PORT}
+ExecStart=${ACTIVATOR_HELPER_PATH} run ${env_file} ${PODMAN_BIN} ${BRO_HELPER_BIN} ${CONTAINER_IDENTIFIER} ${INTERNAL_HOST} ${INTERNAL_PORT}
 
 NoNewPrivileges=no
 PrivateTmp=yes
@@ -402,6 +437,7 @@ report_summary() {
 Activator configuration for '${CONTAINER_NAME}' created.
   Socket unit : ${SOCKET_UNIT_PATH}
   Service unit: ${SERVICE_UNIT_PATH}
+  Helper script: ${ACTIVATOR_HELPER_PATH}
   Container   : ${CONTAINER_QUADLET_PATH}
 
 Remember to run:
@@ -410,8 +446,29 @@ Remember to run:
 EOF
 }
 
+report_removal_summary() {
+  cat <<EOF
+Activator files processed for '${CONTAINER_NAME}'${SERVICE_NAME:+ (${SERVICE_NAME})}.
+  Socket unit : ${SOCKET_UNIT_PATH}
+  Service unit: ${SERVICE_UNIT_PATH}
+  Helper script: ${ACTIVATOR_HELPER_PATH}
+
+If the activator was enabled, run:
+  systemctl --user daemon-reload
+  systemctl --user disable --now ${ACTIVATOR_UNIT_PREFIX}.socket ${ACTIVATOR_UNIT_PREFIX}.service
+EOF
+}
+
 main() {
   parse_args "$@"
+  resolve_paths
+
+  if (( REMOVE_MODE )); then
+    remove_activator_units
+    report_removal_summary
+    return 0
+  fi
+
   command_paths
 
   if [[ -z "${EXTERNAL_SPEC}" ]]; then
@@ -427,7 +484,6 @@ main() {
   parse_host_port "${INTERNAL_SPEC}" "127.0.0.1" INTERNAL_HOST INTERNAL_PORT
 
   check_external_port "${EXTERNAL_HOST}" "${EXTERNAL_PORT}"
-  resolve_paths
   ensure_no_unit_collisions
   resolve_container_identifier
   update_container_quadlet

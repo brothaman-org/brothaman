@@ -2,15 +2,27 @@
 .SH NAME
 bro-activator \- generate socket activation units for rootless Podman containers
 .SH SYNOPSIS
-.B bro-activator
-.B --name
+.B bro-activator --name
 .I CONTAINER_NAME
 [
+.B --service-name
+.I VALUE
+] [
 .B --external-port
 .I [ADDR:]PORT
 ] [
 .B --internal-port
 .I [ADDR:]PORT
+] [
+.B --network
+.I VALUE
+]
+.br
+.B bro-activator --remove --name
+.I CONTAINER_NAME
+[
+.B --service-name
+.I VALUE
 ]
 .SH DESCRIPTION
 .B bro-activator
@@ -32,10 +44,26 @@ It validates port availability, ensures the container quadlet exists, and, if re
 .B Network=
 directive via
 .BR --network .
+.B --remove
+deletes the generated activator socket, service, and helper script for the requested name (and optional
+.BR --service-name )
+and exits without modifying the quadlet.
 .SH OPTIONS
 .TP
 .B --name CONTAINER_NAME
 Name of the quadlet container (without extension). Required.
+.TP
+.B --service-name VALUE
+Optional suffix used when generating multiple activators for the same container. Artifacts become
+.I $CONTAINER_NAME-$VALUE-activator.{socket,service}
+and helper files inherit the suffix.
+.TP
+.B --remove
+Delete the activator socket, service, and helper script for the requested name (and optional service suffix). This mode cannot be combined with
+.BR --external-port ,
+.BR --internal-port ,
+or
+.BR --network .
 .TP
 .B --external-port [ADDR:]PORT
 Host address and port to listen on. The address defaults to
@@ -62,6 +90,10 @@ Generated socket unit.
 .TP
 .I ~/.config/systemd/user/$CONTAINER_NAME-activator.service
 Generated service unit.
+.TP
+.I ~/.config/systemd/user/$CONTAINER_NAME-activator-helper.sh
+Helper script invoked by the service unit to capture the container's PID, wait for readiness, and launch
+.BR systemd-socket-proxyd .
 .TP
 .I ~/.config/containers/systemd/$CONTAINER_NAME.container
 Existing container quadlet, updated to remove only conflicting `PublishPort=` entries (and optionally override `Network=` when requested).

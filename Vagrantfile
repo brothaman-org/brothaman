@@ -29,7 +29,7 @@ Vagrant.configure("2") do |config|
 
     sudo apt-get update -y
     sudo DEBIAN_FRONTEND=noninteractive apt autoremove -y 
-    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y socat jq postgresql-client curl
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y socat jq postgresql-client curl bridge-utils
 
     sudo zpool create testing raidz1 /dev/vdb /dev/vdc /dev/vdd
     sudo zpool status
