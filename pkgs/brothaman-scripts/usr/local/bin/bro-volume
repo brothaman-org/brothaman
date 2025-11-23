@@ -316,11 +316,22 @@ parse_args() {
 
 require_dependencies() {
   local missing=()
-for cmd in zfs zpool zfs-helperctl useradd usermod install awk podman setfacl; do
-    if ! command -v "$cmd" >/dev/null 2>&1; then
-      missing+=("$cmd")
+  local commands=(zfs zpool zfs-helperctl useradd usermod install awk podman setfacl)
+
+  for cmd in "${commands[@]}"; do
+    if ! command -v "${cmd}" >/dev/null 2>&1; then
+      if [[ "${cmd}" == "setfacl" ]]; then
+        bro_warn "setfacl not found; installing acl package"
+        bro_apt_install acl || true
+        if ! command -v setfacl >/dev/null 2>&1; then
+          missing+=("setfacl")
+        fi
+      else
+        missing+=("${cmd}")
+      fi
     fi
   done
+
   if (( ${#missing[@]} > 0 )); then
     bro_error "Missing required commands: ${missing[*]}"
     exit 1

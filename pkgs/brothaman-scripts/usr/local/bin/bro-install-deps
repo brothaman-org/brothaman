@@ -35,4 +35,6 @@ if [[ "$MODE" == ansible ]]; then
 fi
 
 # --- shell mode ---
-bro_log "(shell mode) bro-install-deps would install Podman + dependencies here."
+bro_log "(shell mode) Installing base dependencies: acl"
+bro_apt_update
+bro_apt_install acl

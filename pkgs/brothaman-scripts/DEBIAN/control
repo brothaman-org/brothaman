@@ -3,7 +3,7 @@ Version: 1.0.0
 Section: admin
 Priority: optional
 Architecture: all
-Depends: bash (>= 4.0), coreutils, systemd, sudo, zfsutils-linux, zfs-helper
+Depends: bash (>= 4.0), coreutils, acl, systemd, sudo, zfsutils-linux, zfs-helper
 Recommends: zfs-helper-client
 Maintainer: brothaman <akarasulu@apache.org>
 Description: Brothaman shell script collection and shared library
