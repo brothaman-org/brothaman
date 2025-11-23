@@ -12,17 +12,17 @@ Description: Network namespace helper utilities for brothaman
  and bro-nsenter for entering container namespaces with FD preservation
  for systemd socket activation support.
 Filename: pool/brothaman-helper_1.0.0_amd64.deb
-Size: 274792
-MD5sum: 484f02cb21f3cf11959ac611c546c10e
-SHA1: 932a2458899b84bb8f40fccc77b101ffb8247f79
-SHA256: deae4f0f51acf32e0e90f848eb1a4ef4bbaf946322778951857b5ea1417fc6f5
+Size: 274940
+MD5sum: 71c7103494b2690967327a421d1eb5a5
+SHA1: 72ac8f27e844d23a0a10bec30d76fda4b6a8dab4
+SHA256: 8593ba0d6ee8cfae42bdc6cfb97d0e278e4bdd921460b5367dca3985d9b3b3ec
 
 Package: brothaman-scripts
 Version: 1.0.0
 Section: admin
 Priority: optional
 Architecture: all
-Depends: bash (>= 4.0), coreutils, systemd, sudo, zfsutils-linux, zfs-helper
+Depends: bash (>= 4.0), coreutils, acl, systemd, sudo, zfsutils-linux, zfs-helper
 Recommends: zfs-helper-client
 Maintainer: brothaman <akarasulu@apache.org>
 Description: Brothaman shell script collection and shared library
@@ -40,8 +40,8 @@ Description: Brothaman shell script collection and shared library
  All scripts follow consistent conventions and use the shared bro-common
  library for logging, version comparison, and system utilities.
 Filename: pool/brothaman-scripts_1.0.0_all.deb
-Size: 19212
-MD5sum: 7b0350a1c5300e58fab557d39f867eb1
-SHA1: 339352ce1e9b641c8138ea6234b4e888b478f0a2
-SHA256: 1b65dc69ab1040b365f3c52f21e77e46f26f932a0d8a9f067e64a7ff7126db41
+Size: 19296
+MD5sum: b56e95c9a02b47605804c8c114dab49d
+SHA1: cfc7e294e7e8e629855736920ae2827591a06064
+SHA256: 1b61d9cf7fcb564b7c71ed30cfee416e12f724b045f86d44020156d419fff0d2
 
