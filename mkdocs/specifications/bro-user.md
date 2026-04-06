@@ -24,7 +24,7 @@ The `bro-user` CLI program, as a bash script, is part of the Brothaman scripts p
 * The `bro-user` script does not configure any additional user account settings beyond those listed here.
 * The `bro-user` script supports the following command line options:
   * `--system-user`: Create the user account as a system user with no login shell (`/usr/sbin/nologin`).
-  * `--network-cmd VALUE`: Override the rootless Podman network backend string. Defaults to `none`, but you can set it to supported backends and flags (e.g., `slirp4netns`, `pasta -4`, `none`).
+  * `--network-cmd VALUE`: Override the rootless Podman network backend string. Defaults to `pasta -4`, but you can set it to supported backends and flags (e.g., `slirp4netns`, `pasta -4`, `none`).
   * `--help`: Display help information about the script usage.
   * `--version`: Display the version of the `bro-user` script.
   * `USERNAME`: The username of the user account to create (positional argument).
@@ -33,9 +33,10 @@ The `bro-user` CLI program, as a bash script, is part of the Brothaman scripts p
 * The `bro-user` script is intended to be used by system administrators to create and manage unprivileged user accounts for running rootless Podman containers in a secure and isolated manner.
 * The `bro-user` script is part of the Brothaman project and is licensed under the ASL 2.0 License.
 * The `bro-user` script is maintained as part of the Brothaman scripts package and should be kept up to date with the latest features and security patches.
-* The proper Podman configurations are created in the appropriate files under XDG paths. By default container networking is disabled (`default_rootless_network_cmd = "none"`), keeping new users isolated unless they opt into a specific backend.
+* The proper Podman configurations are created in the appropriate files under XDG paths. By default rootless networking is configured to IPv4-only pasta (`default_rootless_network_cmd = "pasta"` with `pasta_options = ["-4"]`).
 * The `bro-user` script creates a per-user `containers.conf` file under `~/.config/containers/containers.conf`. It contains the following settings by default to optimize for unprivileged rootless containers:
-  * `default_rootless_network_cmd = "none"`: Configures the default rootless networking backend to `none`, keeping containers isolated unless explicitly overridden (e.g., by `--network-cmd` or quadlet `Network=` directives).
-  * `pasta_options = ["-4"]` (only when `--network-cmd` includes pasta flags): Allows passing explicit pasta arguments such as IPv4-only mode.
+  * `default_rootless_network_cmd = "pasta"`: Configures the default rootless networking backend.
+  * `pasta_options = ["-4"]`: Uses IPv4-only pasta mode to avoid IPv6 route failures on hosts where IPv6 is disabled.
+  * If `--network-cmd none` is used, `bro-user` omits the `[network]` override keys entirely and networking should be disabled per container (for example with `Network=none` in quadlets or `--network=none` for direct podman runs).
   * `storage_driver = "overlay"`: Sets the storage driver for containers to `overlay`, which is suitable for most use cases and provides good performance.
   * `storage_options = ["overlay.mountopt=nodev"]`: Adds the `nodev` mount option to the overlay storage driver to enhance security by preventing device files from being created within container filesystems.
